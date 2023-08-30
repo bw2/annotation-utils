@@ -112,10 +112,10 @@ def main():
     print("Parsed %d HPO terms" % len(hpo_id_to_record))
 
     hpo_terms = parse_hpo_terms_arg(args.hpo_terms, hpo_id_to_record)
-    print(f"{len(hpo_terms)} HPO terms:")
+    print(f"{len(hpo_terms):,d} HPO terms:")
 
     category_field_width = max(len(hpo_id_to_record[hpo_term]["category"]) for hpo_term in hpo_terms)
-    for hpo_term in sorted(hpo_terms, key=lambda hpo_term: hpo_id_to_record[hpo_term]['category_id']):
+    for hpo_term in sorted(hpo_terms, key=lambda hpo_term: (hpo_id_to_record[hpo_term]['category_id'], hpo_term)):
         record = hpo_id_to_record[hpo_term]
 
         if args.verbose:
