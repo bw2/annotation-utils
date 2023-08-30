@@ -3,11 +3,12 @@ import collections
 import pymysql
 
 
-# SQL db schema @ http://useast.ensembl.org/info/docs/api/core/core_schema.html
-# To get list of available dbs, connect and run SHOW DATABASES
+# NTOE:   SQL db schema @ http://useast.ensembl.org/info/docs/api/core/core_schema.html
+# To get list of available dbs, run: mysql -D homo_sapiens_core_110_38 -u anonymous -h ensembldb.ensembl.org
+# and use SHOW DATABASES; SHOW TABLES; DESCRIBE <table>
 
 
-CURRENT_ENSEMBL_DATABASE = "homo_sapiens_core_109_38"
+CURRENT_ENSEMBL_DATABASE = "homo_sapiens_core_110_38"
 
 """
 homo_sapiens_cdna_102_38
@@ -23,6 +24,57 @@ homo_sapiens_rnaseq_103_38
 homo_sapiens_variation_102_38
 homo_sapiens_variation_103_38
 """
+
+
+def get_gene_name_to_gene_id(
+        database=CURRENT_ENSEMBL_DATABASE,
+        only_protein_coding=False,
+        only_canonical_transcripts=False):
+    """Retrieves a dictionary containing gene_name => ENSG gene_id.
+
+    Args:
+        database (str): The Ensembl database name (eg. "homo_sapiens_core_107_38")
+        only_protein_coding (bool): If True, only return protein-coding genes and protein-coding transcripts
+        only_canonical_transcripts (bool): If True, only return canonical transcripts
+
+    Return:
+        dict: mapping gene name to ENSG id string
+    """
+
+    gene_id_to_transcript_id = collections.defaultdict(list)
+    with pymysql.connect(host="useastdb.ensembl.org", user="anonymous", database=database) as conn:
+        with conn.cursor() as cursor:
+            if only_canonical_transcripts:
+                join_clause = "canonical_transcript_id = transcript_id"
+            else:
+                join_clause = "transcript.gene_id = gene.gene_id"
+
+            columns = [
+                # Gene fields
+                "gene.stable_id",
+                "gene.biotype",
+                "gene.created_date",
+                "gene.modified_date",
+                # Transcript fields
+                "transcript.stable_id",
+                "transcript.biotype",
+                "transcript.created_date",
+                "transcript.modified_date",
+            ]
+
+            columns_str = ", ".join(columns)
+            query_string = f"SELECT {columns_str} FROM gene LEFT JOIN transcript ON {join_clause}"
+            if only_protein_coding:
+                query_string += " WHERE gene.biotype = 'protein_coding' AND transcript.biotype = 'protein_coding'"
+
+            cursor.execute(query_string)
+
+            for row in cursor:
+                gene_and_transcript_info = dict(zip(columns, row))
+                gene_id = gene_and_transcript_info['gene.stable_id']
+                gene_id_to_transcript_id[gene_id].append(gene_and_transcript_info)
+
+    return gene_id_to_transcript_id
 
 
 def get_gene_id_to_transcript_metadata(
