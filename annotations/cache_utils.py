@@ -20,7 +20,8 @@ def cache_data_table(get_table_func):
 
         # check if cached file already exists
         function_name = get_table_func.__name__
-        filename = re.sub("^get_", "", function_name) + ".tsv.gz"
+        h = hash((function_name, args, frozenset(kwargs.items())))
+        filename = re.sub("^get_", "", function_name) + f".{h}.tsv.gz"
         cache_file_path = os.path.join(CACHE_DIR, filename)
 
         if os.path.isfile(cache_file_path):
