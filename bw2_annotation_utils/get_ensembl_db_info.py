@@ -1,5 +1,4 @@
 import collections
-
 import pymysql
 
 
@@ -261,12 +260,12 @@ def get_ensembl_ENST_to_RefSeq_id(database=CURRENT_ENSEMBL_DATABASE):
             "AND external_db.db_name = 'RefSeq_mRNA'",
     ]))
 
-    ensembl_ENST_to_RefSeq_id = {
-        ensembl_ESNT_id_without_version: refseq_NM_id
-        for ensembl_ESNT_id_without_version, refseq_NM_id in cursor.fetchall()
-    }
+    ensembl_ENST_to_RefSeq_ids = collections.defaultdict(list)
+    for ensembl_ESNT_id_without_version, refseq_NM_id in cursor.fetchall():
+        ensembl_ENST_to_RefSeq_ids[ensembl_ESNT_id_without_version].append(refseq_NM_id)
+
     cursor.close()
     db.close()
 
-    return ensembl_ENST_to_RefSeq_id
+    return ensembl_ENST_to_RefSeq_ids
 
