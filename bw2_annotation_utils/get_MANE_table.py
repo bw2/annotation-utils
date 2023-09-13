@@ -24,9 +24,11 @@ def get_MANE_ensembl_transcript_table(mane_gtf_url=MANE_GTF_URL, feature_type=No
 
     table_rows = []
     for line in gzip.decompress(r.content).decode("UTF-8").strip().split("\n"):
-        fields = line.split("\t")
+        if line.startswith("#"):
+            continue
 
-        if len(fields) < 2:
+        fields = line.strip().split("\t")
+        if len(fields) < 9:
             print(f"WARNING: unable to parse line: {line}")
             continue
 
@@ -45,7 +47,6 @@ def get_MANE_ensembl_transcript_table(mane_gtf_url=MANE_GTF_URL, feature_type=No
         info = fields[8]
         record.update({k: v.strip(';" ') for k, v in [x.split(" ") for x in info.split("; ")]})
 
-        record["is_MANE_select"] = record.get("tag") == "MANE_Select"
         table_rows.append(record)
 
     return pd.DataFrame(table_rows)
