@@ -245,7 +245,7 @@ def get_transcript_created_modified_dates(
         for gene_id, transcript_metadata_list in gene_id_to_transcript_metadata_list.items()
     }
 
-def get_ensembl_ENST_to_RefSeq_id(database=CURRENT_ENSEMBL_DATABASE):
+def get_ensembl_ENST_to_RefSeq_ids(database=CURRENT_ENSEMBL_DATABASE):
 
     db = pymysql.connect(host=ENSEMBL_HOST, user="anonymous", database=database)
     cursor = db.cursor()
