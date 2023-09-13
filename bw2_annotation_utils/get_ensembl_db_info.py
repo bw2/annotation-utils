@@ -2,9 +2,11 @@ import collections
 import pymysql
 
 
-# NTOE:   SQL db schema @ http://useast.ensembl.org/info/docs/api/core/core_schema.html
-# To get list of available dbs, run: mysql -D homo_sapiens_core_110_38 -u anonymous -h ensembldb.ensembl.org
-# and use SHOW DATABASES; SHOW TABLES; DESCRIBE <table>
+# NOTE:   SQL db schema @ http://useast.ensembl.org/info/docs/api/core/core_schema.html
+# To list the latest database name, run: mysql -h useastdb.ensembl.org -u anonymous -e "show databases;" | grep homo_sapiens_core
+# To list available tables, run: mysql -D homo_sapiens_core_110_38 -u anonymous -h useastdb.ensembl.org -e "show tables"
+# or use the mysql shell and SHOW DATABASES; SHOW TABLES; DESCRIBE <table>
+
 
 
 CURRENT_ENSEMBL_DATABASE = "homo_sapiens_core_110_38"

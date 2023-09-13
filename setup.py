@@ -28,7 +28,7 @@ def test_suite():
 
 setup(
     name='bw2-annotation-utils',
-    version="0.1.2",
+    version="0.1.3",
     description="Misc. utilities for downloading and working with various gene annotations, the HPO ontology, etc",
     install_requires=requirements,
     cmdclass={

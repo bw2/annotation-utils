@@ -1,52 +1,25 @@
-import gzip
 import pandas as pd
-import requests
 
 
-MANE_GTF_URL = "https://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/release_1.2/MANE.GRCh38.v1.2.ensembl_genomic.gtf.gz"
+MANE_SUMMARY_TABLE_URL = "https://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/release_1.2/MANE.GRCh38.v1.2.summary.txt.gz"
 
 
-def get_MANE_ensembl_transcript_table(mane_gtf_url=MANE_GTF_URL, feature_type=None):
-    """Download the MANE ensembl gtf and return it as a pandas DataFrame
+def get_MANE_ensembl_transcript_table(mane_summary_table_url=MANE_SUMMARY_TABLE_URL):
+    """Download the MANE summary table and return it as a pandas DataFrame. Columns and example values are:
 
-    Args:
-        mane_gtf_url (str): url of the MANE ensembl gtf file
-        feature_type (str): if not None, only keep features of this type. Allowed values are:
-            'gene', 'transcript', 'CDS', 'UTR', 'exon', 'start_codon', 'stop_codon'
-
-    Return:
-        pandas.DataFrame: MANE ensembl gtf as a pandas DataFrame
+        $1   #NCBI_GeneID : GeneID:15
+        $2   Ensembl_Gene : ENSG00000129673.10
+        $3        HGNC_ID : HGNC:19
+        $4         symbol : AANAT
+        $5           name : aralkylamine N-acetyltransferase
+        $6     RefSeq_nuc : NM_001088.3
+        $7    RefSeq_prot : NP_001079.1
+        $8    Ensembl_nuc : ENST00000392492.8
+        $9   Ensembl_prot : ENSP00000376282.2
+        $10   MANE_status : MANE Select
+        $11    GRCh38_chr : NC_000017.11
+        $12     chr_start : 76467603
+        $13       chr_end : 76470117
+        $14    chr_strand : +
     """
-
-    r = requests.get(mane_gtf_url)
-    if not r.ok:
-        raise Exception(f"Failed to download {mane_gtf_url}: {r}")
-
-    table_rows = []
-    for line in gzip.decompress(r.content).decode("UTF-8").strip().split("\n"):
-        if line.startswith("#"):
-            continue
-
-        fields = line.strip().split("\t")
-        if len(fields) < 9:
-            print(f"WARNING: unable to parse line: {line}")
-            continue
-
-        if feature_type is not None and fields[2] != feature_type:
-            continue
-
-        record = {
-            "chrom": fields[0],
-            "source": fields[1],
-            "feature": fields[2],
-            "start": int(fields[3]),
-            "end": int(fields[4]),
-            "strand": fields[6],
-        }
-
-        info = fields[8]
-        record.update({k: v.strip(';" ') for k, v in [x.split(" ") for x in info.split("; ")]})
-
-        table_rows.append(record)
-
-    return pd.DataFrame(table_rows)
+    return pd.read_table(mane_summary_table_url)
