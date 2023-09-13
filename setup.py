@@ -27,8 +27,8 @@ def test_suite():
 
 
 setup(
-    name='str_analysis',
-    version="1.2",
+    name='bw2-annotation-utils',
+    version="0.1",
     description="Misc. utilities for downloading and working with various gene annotations, the HPO ontology, etc",
     install_requires=requirements,
     cmdclass={
