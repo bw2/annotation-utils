@@ -2,7 +2,7 @@ import pandas as pd
 import requests
 from io import StringIO
 
-from annotations.cache_utils import cache_data_table
+from bw2_annotation_utils.cache_utils import cache_data_table
 
 
 def _get_clingen_table(url):

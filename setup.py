@@ -36,12 +36,12 @@ setup(
     },
     entry_points = {
         'console_scripts': [
-            'hpo_lookup = annotations.hpo_lookup:main',
+            'hpo_lookup = bw2_annotation_utils.hpo_lookup:main',
         ],
     },
     long_description_content_type="text/markdown",
     long_description=long_description,
-    packages=["annotations"],
+    packages=["bw2_annotation_utils"],
     include_package_data=True,
     python_requires=">=3.7",
     license="MIT",

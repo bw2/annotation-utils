@@ -1,7 +1,7 @@
 import pandas as pd
 import requests
 
-from annotations.cache_utils import cache_data_table
+from bw2_annotation_utils.cache_utils import cache_data_table
 
 URL = "https://panelapp.genomicsengland.co.uk/api/v1/genes/"
 
