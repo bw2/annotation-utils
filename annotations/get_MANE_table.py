@@ -2,16 +2,15 @@ import gzip
 import pandas as pd
 import requests
 
-from annotations.cache_utils import cache_data_table
 
-URL = "https://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/release_1.2/MANE.GRCh38.v1.2.ensembl_genomic.gtf.gz"
+MANE_GTF_URL = "https://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/release_1.2/MANE.GRCh38.v1.2.ensembl_genomic.gtf.gz"
 
 
-@cache_data_table
-def get_MANE_ensembl_transcript_table(feature_type=None):
+def get_MANE_ensembl_transcript_table(mane_gtf_url=MANE_GTF_URL, feature_type=None):
     """Download the MANE ensembl gtf and return it as a pandas DataFrame
 
     Args:
+        mane_gtf_url (str): url of the MANE ensembl gtf file
         feature_type (str): if not None, only keep features of this type. Allowed values are:
             'gene', 'transcript', 'CDS', 'UTR', 'exon', 'start_codon', 'stop_codon'
 
@@ -19,9 +18,9 @@ def get_MANE_ensembl_transcript_table(feature_type=None):
         pandas.DataFrame: MANE ensembl gtf as a pandas DataFrame
     """
 
-    r = requests.get(URL)
+    r = requests.get(mane_gtf_url)
     if not r.ok:
-        raise Exception(f"Failed to download {URL}: {r}")
+        raise Exception(f"Failed to download {mane_gtf_url}: {r}")
 
     table_rows = []
     for line in gzip.decompress(r.content).decode("UTF-8").strip().split("\n"):
