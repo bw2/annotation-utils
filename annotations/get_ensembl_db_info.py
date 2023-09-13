@@ -9,6 +9,7 @@ import pymysql
 
 
 CURRENT_ENSEMBL_DATABASE = "homo_sapiens_core_110_38"
+ENSEMBL_HOST = "useastdb.ensembl.org"
 
 """
 homo_sapiens_cdna_102_38
@@ -42,7 +43,7 @@ def get_gene_name_to_gene_id(
     """
 
     gene_id_to_transcript_id = collections.defaultdict(list)
-    with pymysql.connect(host="useastdb.ensembl.org", user="anonymous", database=database) as conn:
+    with pymysql.connect(host=ENSEMBL_HOST, user="anonymous", database=database) as conn:
         with conn.cursor() as cursor:
             if only_canonical_transcripts:
                 join_clause = "canonical_transcript_id = transcript_id"
@@ -94,7 +95,7 @@ def get_gene_id_to_transcript_metadata(
     """
 
     gene_id_to_transcript_id = collections.defaultdict(list)
-    with pymysql.connect(host="useastdb.ensembl.org", user="anonymous", database=database) as conn:
+    with pymysql.connect(host=ENSEMBL_HOST, user="anonymous", database=database) as conn:
         with conn.cursor() as cursor:
             if only_canonical_transcripts:
                 join_clause = "canonical_transcript_id = transcript_id"
@@ -242,3 +243,30 @@ def get_transcript_created_modified_dates(
         ]
         for gene_id, transcript_metadata_list in gene_id_to_transcript_metadata_list.items()
     }
+
+def get_ensembl_ENST_to_RefSeq_id(database=CURRENT_ENSEMBL_DATABASE):
+
+    db = pymysql.connect(host=ENSEMBL_HOST, user="anonymous", database=database)
+    cursor = db.cursor()
+    cursor.execute(" ".join([
+        "SELECT",
+            "transcript.stable_id, xref.display_label",
+        "FROM",
+            "transcript, object_xref, xref,external_db",
+        "WHERE",
+            "transcript.transcript_id = object_xref.ensembl_id",
+            "AND object_xref.ensembl_object_type = 'Transcript'",
+            "AND object_xref.xref_id = xref.xref_id",
+            "AND xref.external_db_id = external_db.external_db_id",
+            "AND external_db.db_name = 'RefSeq_mRNA'",
+    ]))
+
+    ensembl_ENST_to_RefSeq_id = {
+        ensembl_ESNT_id_without_version: refseq_NM_id
+        for ensembl_ESNT_id_without_version, refseq_NM_id in cursor.fetchall()
+    }
+    cursor.close()
+    db.close()
+
+    return ensembl_ENST_to_RefSeq_id
+
