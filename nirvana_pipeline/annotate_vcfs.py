@@ -65,17 +65,18 @@ def main():
         nirvana_bucket = s1.input(NIRVANA_REF_DATA_BUCKET, localize_by=Localize.HAIL_BATCH_CLOUDFUSE)
         local_input_vcf = s1.input(vcf_path)
 
+        output_prefix = f"{filename_prefix}.nirvana"
         s1.command("set -ex")
         s1.command(f"""dotnet /opt/nirvana/Nirvana.dll \
             -c {nirvana_bucket}/Nirvana/Data/Cache/GRCh38/Both \
             -r {nirvana_bucket}/Nirvana/Data/References/Homo_sapiens.GRCh38.Nirvana.dat \
             --sd {nirvana_bucket}/Nirvana/Data/SupplementaryAnnotation/GRCh38 \
             -i {local_input_vcf} \
-            -o {filename_prefix}
+            -o {output_prefix}
         """)
 
-        s1.output(f"{filename_prefix}.json.gz")
-        s1.output(f"{filename_prefix}.json.gz.jsi")
+        s1.output(f"{output_prefix}.json.gz")
+        s1.output(f"{output_prefix}.json.gz.jsi")
         s1.command(f"date")
 
     bp.run()
