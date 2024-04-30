@@ -63,7 +63,8 @@ def get_spliceai_scores_from_api(chrom, pos, ref, alt):
 	#GET https://pangolin-38-xwkwwwxdwq-uc.a.run.app/pangolin/?hg=38&distance=500&mask=0&variant=19-10315746-A-C&raw=chr19:10315746 A>C 200
 
 def parse_nirvana_json(path, call_spliceai_api=False):
-	print(f"Parsing {path}")
+	print(f"Parsing {path}" +  (" and calling SpliceAI-lookup to add SpliceAI scores" if call_spliceai_api else ""))
+
 	open_func = gzip.open if path.endswith(".gz") else open
 	with open_func(path, "rt") as f:
 		json_dict = json.load(f)
@@ -125,7 +126,6 @@ def parse_nirvana_json(path, call_spliceai_api=False):
 			}
 
 			if call_spliceai_api:
-				print(f"Calling spliceAI API for variant {chrom}-{pos}-{ref}-{alt}")
 				record['spliceAI_gain'], record['spliceAI_loss'] = get_spliceai_scores_from_api(
 					chrom.replace("chr", "").upper(), pos, ref, alt)
 

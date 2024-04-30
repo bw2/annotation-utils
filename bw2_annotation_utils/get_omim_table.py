@@ -105,6 +105,10 @@ def get_omim_table():
     omim_df = omim_df[omim_df["locus_size"] < MAX_GENE_SIZE]
     omim_df = omim_df[omim_df["start"] > 1]
 
+    omim_df["pLI"] = omim_df["pLI"].replace("", float('nan')).replace("NA", float('nan')).astype(float)
+    omim_df["mis_z"] = omim_df["mis_z"].replace("", float('nan')).replace("NA", float('nan')).astype(float)
+    omim_df["oe_lof_upper"] = omim_df["oe_lof_upper"].replace("", float('nan')).replace("NA", float('nan')).astype(float)
+
     return omim_df[OUTPUT_COLUMNS]
 
 
