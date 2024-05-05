@@ -13,6 +13,8 @@ import tqdm
 
 from pprint import pprint
 
+from bw2_annotation_utils.spliceai_scores import get_spliceai_scores_from_api
+
 LOF_CONSEQUENCES = {
 	'splice_acceptor_variant',
 	'splice_donor_variant',
@@ -41,28 +43,7 @@ CONSEQUENCES_TO_IGNORE = {
 	"upstream_gene_variant",
 }
 
-
-def get_spliceai_scores_from_api(chrom, pos, ref, alt):
-	variant = f"{chrom}-{pos}-{ref}-{alt}"
-	result = requests.get(f"https://spliceai-38-xwkwwwxdwq-uc.a.run.app/spliceai/?hg=38&distance=500&mask=0&variant={variant}&raw={variant}")
-	spliceai_scores = result.json()
-	spliceai_scores = spliceai_scores.get("scores", [])
-
-	spliceai_gain_score = max(
-		max(float(s["DS_AG"]) for s in spliceai_scores),
-		max(float(s["DS_DG"]) for s in spliceai_scores)
-	)
-
-	spliceai_loss_score = max(
-		max(float(s["DS_AL"]) for s in spliceai_scores),
-		max(float(s["DS_DL"]) for s in spliceai_scores)
-	)
-
-	return spliceai_gain_score, spliceai_loss_score
-
-	#GET https://pangolin-38-xwkwwwxdwq-uc.a.run.app/pangolin/?hg=38&distance=500&mask=0&variant=19-10315746-A-C&raw=chr19:10315746 A>C 200
-
-def parse_nirvana_json(path, call_spliceai_api=False):
+def parse_nirvana_json(path, call_spliceai_api=False, verbose=False):
 	print(f"Parsing {path}" +  (" and calling SpliceAI-lookup to add SpliceAI scores" if call_spliceai_api else ""))
 
 	open_func = gzip.open if path.endswith(".gz") else open
@@ -72,7 +53,11 @@ def parse_nirvana_json(path, call_spliceai_api=False):
 	header = json_dict.get("header", {})
 	sample_ids = header["samples"]
 
-	for position in json_dict['positions']:
+	positions = json_dict['positions']
+	if verbose:
+		positions = tqdm.tqdm(positions, unit=" variants")
+
+	for position in positions:
 		for i, variant in enumerate(position['variants']):
 			transcripts = variant.get('transcripts', [])
 			if any(t.get('bioType') == "protein_coding" for t in transcripts):
@@ -126,6 +111,7 @@ def parse_nirvana_json(path, call_spliceai_api=False):
 			}
 
 			if call_spliceai_api:
+				print(f"Calling SpliceAI-lookup for {chrom}-{pos}-{ref}-{alt}")
 				record['spliceAI_gain'], record['spliceAI_loss'] = get_spliceai_scores_from_api(
 					chrom.replace("chr", "").upper(), pos, ref, alt)
 
@@ -141,13 +127,14 @@ def main():
 	p = argparse.ArgumentParser()
 	p.add_argument("-o", "--output-file", help="bed file output path")
 	p.add_argument("-s", "--call-spliceai-api", action="store_true", help="Use the SpliceAI-lookup API to get spliceAI scores")
+	p.add_argument("--verbose", action="store_true")
 	p.add_argument("nirvana_json", help="Path of Nirvana JSON file")
 	args = p.parse_args()
 
 	if not args.output_file:
 		args.output_file = re.sub(".json(.gz)?$", "", args.nirvana_json) + ".tsv.gz"
 
-	output_rows = parse_nirvana_json(args.nirvana_json, call_spliceai_api=args.call_spliceai_api)
+	output_rows = parse_nirvana_json(args.nirvana_json, call_spliceai_api=args.call_spliceai_api, verbose=args.verbose)
 	df = pd.DataFrame(output_rows)
 	df.to_csv(args.output_file, sep="\t", index=False)
 
