@@ -121,3 +121,55 @@ if __name__ == "__main__":
     output_path = f"omim_{timestamp}.tsv"
     df.to_csv(output_path, sep="\t", index=False, header=True)
     print(f"Wrote {len(df)} records to {output_path}")
+
+
+"""
+5/19/2025 OMIM Table:
+
+Columns:
+
+0: chrom
+1: start
+2: end
+3: mim_number
+4: phenotype_mim_number
+5: phenotypic_series_number
+6: phenotype_inheritance
+7: gene_symbols
+8: gene_id
+9: gene_description
+10: phenotype_description
+11: date_created
+12: date_updated
+13: mouse_gene_id
+14: oe_lof_upper
+15: pLI
+16: mis_z
+17: text
+18: comments
+
+
+(19525, 19)
+
+Example:
+
+chrom                                                   1
+start                                             1013497
+end                                               1014540
+mim_number                                         147571
+phenotype_mim_number                               616126
+phenotypic_series_number
+phenotype_inheritance                 Autosomal recessive
+gene_symbols                  G1P2,  IFI15,  IMD38, ISG15
+gene_id                                   ENSG00000187608
+gene_description            ISG15 ubiquitin-like modifier
+phenotype_description                 Immunodeficiency 38
+date_created
+date_updated
+mouse_gene_id                         Isg15 (MGI:1855694)
+oe_lof_upper                                        1.691
+pLI                                               0.40527
+mis_z                                           -0.044129
+text
+comments
+"""

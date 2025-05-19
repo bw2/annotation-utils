@@ -22,3 +22,41 @@ if __name__ == "__main__":
 
     df = get_hgnc_table()
     print(df)
+
+
+"""
+5/19/2025HGNC Table:
+
+0: HGNC ID
+1: Approved symbol
+2: Approved name
+3: Status
+4: Previous symbols
+5: Alias symbols
+6: Chromosome
+7: Accession numbers
+8: RefSeq IDs
+9: Ensembl gene ID
+10: Mouse genome database ID
+11: Pubmed IDs
+12: Locus type
+
+(44109, 13)
+
+Example:
+
+HGNC ID                                        HGNC:5
+Approved symbol                                  A1BG
+Approved name                  alpha-1-B glycoprotein
+Status                                       Approved
+Previous symbols                                  NaN
+Alias symbols                                     NaN
+Chromosome                                   19q13.43
+Accession numbers                                 NaN
+RefSeq IDs                                  NM_130786
+Ensembl gene ID                       ENSG00000121410
+Mouse genome database ID                  MGI:2152878
+Pubmed IDs                                    2591067
+Locus type                  gene with protein product
+
+"""

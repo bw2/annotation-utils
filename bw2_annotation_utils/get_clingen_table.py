@@ -45,3 +45,55 @@ if __name__ == "__main__":
     df = get_clingen_dosage_sensitivity_table()
     print("Dosage Sensitivity Table columns:")
     print(df)
+
+
+"""
+5/19/2025 ClinGen Gene-Disease Validity Table:
+
+Columns:
+0: GENE SYMBOL
+1: GENE ID (HGNC)
+2: DISEASE LABEL
+3: DISEASE ID (MONDO)
+4: MOI
+5: SOP
+6: CLASSIFICATION
+7: ONLINE REPORT
+8: CLASSIFICATION DATE
+9: GCEP
+
+Example:
+
+GENE SYMBOL                                                        AARS1
+GENE ID (HGNC)                                                   HGNC:20
+DISEASE LABEL                 Charcot-Marie-Tooth disease axonal type 2N
+DISEASE ID (MONDO)                                         MONDO:0013212
+MOI                                                                   AD
+SOP                                                                SOP10
+CLASSIFICATION                                                Definitive
+ONLINE REPORT          https://search.clinicalgenome.org/kb/gene-vali...
+CLASSIFICATION DATE                             2024-03-14T16:00:00.000Z
+GCEP                   Charcot-Marie-Tooth Disease Gene Curation Expe...
+
+
+Unique GeneIds: 2,564
+
+
+CLASSIFICATION
+Definitive                       1932
+Limited                           461
+Moderate                          367
+Disputed                          177
+Strong                             70
+No Known Disease Relationship      48
+Refuted                            40
+
+
+MOI
+AR    1519
+AD    1260
+XL     182
+MT      54
+SD      51
+UD      29
+"""
