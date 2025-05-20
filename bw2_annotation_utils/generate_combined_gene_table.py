@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import pandas as pd
 from bw2_annotation_utils.get_panel_app_table import get_panel_app_table
@@ -278,3 +279,8 @@ df_combined.reset_index(inplace=True)
 df_combined.rename(columns={
     "index": "gene_id",
 }, inplace=True)
+
+timestamp = datetime.now().strftime("%Y_%m_%d")
+output_path = f"combined_mendelian_gene_disease_table.{len(df_combined)}_genes.{timestamp}.tsv"
+df_combined.to_csv(output_path, sep="\t", index=False)
+print(f"Wrote {len(df_combined):,d} genes to {output_path}")
