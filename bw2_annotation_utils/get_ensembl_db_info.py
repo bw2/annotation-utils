@@ -9,7 +9,7 @@ import pymysql
 
 
 
-CURRENT_ENSEMBL_DATABASE = "homo_sapiens_core_110_38"
+CURRENT_ENSEMBL_DATABASE = "homo_sapiens_core_114_38"
 ENSEMBL_HOST = "useastdb.ensembl.org"
 
 """
@@ -155,6 +155,32 @@ def get_gene_id_to_transcript_ids(
             transcript_metadata["transcript.stable_id"] for transcript_metadata in transcript_metadata_list
         ]
         for gene_id, transcript_metadata_list in gene_id_to_transcript_metadata_list.items()
+    }
+
+
+def get_transcript_id_to_gene_id(
+        database=CURRENT_ENSEMBL_DATABASE,
+        only_protein_coding=False,
+        only_canonical_transcripts=False):
+    """Returns a dictionary mapping each Ensembl transcript_id => gene_id.
+
+    Args:
+        database (str): The Ensembl database name (eg. "homo_sapiens_core_107_38")
+        only_protein_coding (bool): If True, only return protein coding genes
+        only_canonical_transcripts (bool): If True, only return canonical transcripts
+    Return:
+        dict: mapping ENST id string to ENSG id string
+    """
+
+    gene_id_to_transcript_ids_list = get_gene_id_to_transcript_ids(
+        database=database,
+        only_canonical_transcripts=only_canonical_transcripts,
+        only_protein_coding=only_protein_coding)
+
+    return {
+        transcript_id: gene_id
+        for gene_id, transcript_ids in gene_id_to_transcript_ids_list.items()
+        for transcript_id in transcript_ids
     }
 
 
