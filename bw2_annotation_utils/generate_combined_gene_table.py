@@ -284,7 +284,8 @@ df_combined.rename(columns={
 df_combined["gene_name"] = df_combined["gene_id"].map(ENSG_to_gene_name_map).str.upper()
 df_combined["gene_aliases"] = df_combined["gene_id"].map(ENSG_to_gene_name_aliases_map).str.upper()
 
-timestamp = datetime.now().strftime("%Y_%m_%d")
-output_path = f"combined_mendelian_gene_disease_table.{len(df_combined)}_genes.{timestamp}.tsv"
+#timestamp = datetime.now().strftime("%Y_%m_%d")
+#output_path = f"combined_mendelian_gene_disease_table.{len(df_combined)}_genes.{timestamp}.tsv"
+output_path = f"combined_mendelian_gene_disease_table.tsv"
 df_combined.to_csv(output_path, sep="\t", index=False)
 print(f"Wrote {len(df_combined):,d} genes to {output_path}")
