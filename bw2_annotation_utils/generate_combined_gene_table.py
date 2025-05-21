@@ -16,8 +16,9 @@ def normalize_nulls(x):
     return str(x) if not pd.isna(x) else ""
 
 df_hgnc = get_hgnc_table()
-df_hgnc = df_hgnc[["HGNC ID", "Ensembl gene ID"]]
 HGNC_to_ENSG_map = dict(zip(df_hgnc["HGNC ID"], df_hgnc["Ensembl gene ID"]))
+ENSG_to_gene_name_map = dict(zip(df_hgnc["Ensembl gene ID"], df_hgnc["Approved symbol"]))
+ENSG_to_gene_name_aliases_map = dict(zip(df_hgnc["Ensembl gene ID"], df_hgnc["Alias symbols"]))
 
 """
 Example:
@@ -279,6 +280,9 @@ df_combined.reset_index(inplace=True)
 df_combined.rename(columns={
     "index": "gene_id",
 }, inplace=True)
+
+df_combined["gene_name"] = df_combined["gene_id"].map(ENSG_to_gene_name_map).str.upper()
+df_combined["gene_aliases"] = df_combined["gene_id"].map(ENSG_to_gene_name_aliases_map).str.upper()
 
 timestamp = datetime.now().strftime("%Y_%m_%d")
 output_path = f"combined_mendelian_gene_disease_table.{len(df_combined)}_genes.{timestamp}.tsv"
