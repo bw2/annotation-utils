@@ -7,6 +7,7 @@ from bw2_annotation_utils.get_clingen_table import get_clingen_gene_disease_vali
 from bw2_annotation_utils.get_hgnc_table import get_hgnc_table
 from bw2_annotation_utils.get_panel_app_table import get_panel_app_table
 from bw2_annotation_utils.get_ensembl_db_info import get_transcript_id_to_gene_id
+from bw2_annotation_utils.get_gwas_catalog import get_gwas_catalog_rare_disease_records
 
 #df = get_clingen_gene_disease_validity_table()
 
@@ -66,6 +67,9 @@ df_omim = df_omim.rename(columns={
     "phenotypic_series_number": "OMIM_phenotypic_series_number",
     "phenotype_inheritance": "OMIM_inheritance",
     "phenotype_description": "OMIM_phenotype_description",
+    "oe_lof_upper": "LOEUF",
+    "pLI": "pLI",
+    "mis_z": "mis_z",
 })
 
 
@@ -81,6 +85,9 @@ df_omim = df_omim.groupby("OMIM_gene_id").agg({
     "OMIM_phenotypic_series_number": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "OMIM_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "OMIM_phenotype_description": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "LOEUF": lambda x: normalize_nulls(x.iloc[0]), 
+    "pLI": lambda x: normalize_nulls(x.iloc[0]),
+    "mis_z": lambda x: normalize_nulls(x.iloc[0]),
 }).reset_index()
 
 
@@ -268,6 +275,49 @@ if os.path.exists(fridman_path):
     df_fridman.set_index("FRIDMAN_gene_id", inplace=True)
 
 
+df_gwas = get_gwas_catalog_rare_disease_records()
+
+"""
+MONDO_ID           MONDO:0016158
+CHR_ID                         2
+CHR_POS                241837710
+SNPS                  rs34071003
+P-VALUE                 0.000004
+OR or BETA                 1.328
+95% CI (TEXT)    [1.1789-1.4980]
+GENE_ID          ENSG00000204099
+GENE_TYPE               UPSTREAM
+GENE_DISTANCE            20297.0
+"""
+
+df_gwas.rename(columns={
+    "MONDO_ID": "GWAS_mondo_id",
+    "CHR_ID": "GWAS_chr_id",
+    "CHR_POS": "GWAS_chr_pos",
+    "SNPS": "GWAS_snps",
+    "P-VALUE": "GWAS_p_value",
+    "OR or BETA": "GWAS_odds_ratio_or_beta",
+    "95% CI (TEXT)": "GWAS_95_ci_text",
+    "GENE_ID": "GWAS_gene_id",
+    "GENE_TYPE": "GWAS_gene_type",
+    "GENE_DISTANCE": "GWAS_gene_distance",
+}, inplace=True)
+
+df_gwas = df_gwas[df_gwas["GWAS_gene_id"].notna() & (df_gwas["GWAS_gene_id"] != "")]
+
+df_gwas = df_gwas.groupby("GWAS_gene_id").agg({
+    "GWAS_mondo_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "GWAS_chr_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "GWAS_chr_pos": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "GWAS_snps": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "GWAS_p_value": lambda x: min(float(v) for v in x if v != ""), 
+    "GWAS_odds_ratio_or_beta": lambda x: min(float(v) for v in x if v != ""), 
+    "GWAS_95_ci_text": lambda x: separtor.join(normalize_nulls(v) for v in x),
+}).reset_index()
+
+df_gwas.set_index("GWAS_gene_id", inplace=True)
+
+
 # merge df_omim, df_clingen, df_panel_app, df_fridman
 print(f"Merging OMIM ({len(df_omim):,d} rows), ClinGen ({len(df_clingen):,d} rows), PanelApp ({len(df_panel_app):,d} rows), and Fridman ({len(df_fridman):,d} rows)")
 df_combined = pd.merge(df_omim, df_clingen, how="outer", left_index=True, right_index=True)
@@ -276,6 +326,8 @@ df_combined = pd.merge(df_combined, df_panel_app, how="outer", left_index=True, 
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with PanelApp"
 df_combined = pd.merge(df_combined, df_fridman, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Fridman"
+df_combined = pd.merge(df_combined, df_gwas, how="outer", left_index=True, right_index=True)
+assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GWAS"
 df_combined.reset_index(inplace=True)
 df_combined.rename(columns={
     "index": "gene_id",

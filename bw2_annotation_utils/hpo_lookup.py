@@ -85,7 +85,7 @@ def get_category_id(hpo_id_to_record, hpo_id):
         if hpo_id == "HP:0000001":
             return None
         if hpo_id not in hpo_id_to_record:
-            raise ValueError("Strange id: %s" % hpo_id)
+            raise ValueError("Unknown HPO id: %s" % hpo_id)
 
     return hpo_id
 

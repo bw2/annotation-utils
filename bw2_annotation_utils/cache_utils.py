@@ -1,6 +1,8 @@
+import hashlib
 import os
 import pandas as pd
 import re
+import time
 
 CACHE_DIR = os.path.expanduser("~/.annotations")
 
@@ -20,11 +22,13 @@ def cache_data_table(get_table_func):
 
         # check if cached file already exists
         function_name = get_table_func.__name__
-        h = hash((function_name, args, frozenset(kwargs.items())))
+        h = hashlib.sha256(f"{function_name} {args} {frozenset(sorted(kwargs.items()))}".encode()).hexdigest()
+        h = h[:10]
         filename = re.sub("^get_", "", function_name) + f".{h}.tsv.gz"
         cache_file_path = os.path.join(CACHE_DIR, filename)
 
-        if os.path.isfile(cache_file_path):
+        # use the cached file if it's less than 1 week old
+        if os.path.isfile(cache_file_path) and os.path.getmtime(cache_file_path) > time.time() - 7 * 24 * 60 * 60:
             return pd.read_table(cache_file_path)
 
         # call the underlying function
