@@ -14,6 +14,8 @@ def _download_gwas_catalog():
     """
     Download the GWAS catalog and return it as a pandas DataFrame
     """
+    print("Downloading GWAS catalog")
+
     df_gwas = pd.read_table(GWAS_CATALOG_URL)
     return df_gwas
 
@@ -67,7 +69,6 @@ def get_gwas_catalog_rare_disease_records():
 
     mondo_rare_disease_term_lookup = get_mondo_ontology()
 
-    print("Downloading GWAS catalog")
     df_gwas = _download_gwas_catalog()
     df_gwas = df_gwas[df_gwas["MAPPED_TRAIT_URI"].notna()]
     df_gwas["MONDO_ID"] = df_gwas["MAPPED_TRAIT_URI"].apply(os.path.basename).str.replace("_", ":")

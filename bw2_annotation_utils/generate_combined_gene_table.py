@@ -182,7 +182,8 @@ print(f"Got {len(df_panel_app):,d} rows from PanelApp, containing {len(df_panel_
 before = len(df_panel_app)
 df_panel_app["gene_id"] = df_panel_app["gene_id"].fillna(df_panel_app["hgnc"].map(HGNC_to_ENSG_map))
 df_panel_app = df_panel_app[df_panel_app["gene_id"].notna() & (df_panel_app["gene_id"] != "")]
-print("\t", f"Kept {len(df_panel_app):,d} out of {before:,d} ({(len(df_panel_app) / before):.1%}) rows which had a gene id")
+df_panel_app = df_panel_app[df_panel_app["phenotypes"].notna() & (df_panel_app["phenotypes"] != "")]
+print("\t", f"Kept {len(df_panel_app):,d} out of {before:,d} ({(len(df_panel_app) / before):.1%}) rows which had a gene id and a phenotype")
 
 before = len(df_panel_app)
 df_panel_app = df_panel_app[~df_panel_app["evidence"].apply(lambda x: not isinstance(x, str) or "Expert Review Red" in x)]
@@ -292,8 +293,12 @@ GENE_TYPE               UPSTREAM
 GENE_DISTANCE            20297.0
 """
 
+df_gwas = df_gwas[~df_gwas["MONDO_CATEGORY"].isin({"cancer or benign tumor", "infectious disease"})]
+
 df_gwas.rename(columns={
     "MONDO_ID": "GWAS_mondo_id",
+    "MONDO_NAME": "GWAS_mondo_name",
+    "MONDO_CATEGORY": "GWAS_mondo_category",
     "CHR_ID": "GWAS_chr_id",
     "CHR_POS": "GWAS_chr_pos",
     "SNPS": "GWAS_snps",
@@ -309,6 +314,10 @@ df_gwas = df_gwas[df_gwas["GWAS_gene_id"].notna() & (df_gwas["GWAS_gene_id"] != 
 
 df_gwas = df_gwas.groupby("GWAS_gene_id").agg({
     "GWAS_mondo_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "GWAS_mondo_name": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "GWAS_mondo_category": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "GWAS_gene_type": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "GWAS_gene_distance": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "GWAS_chr_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "GWAS_chr_pos": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "GWAS_snps": lambda x: separtor.join(normalize_nulls(v) for v in x),
@@ -343,6 +352,8 @@ df_combined.rename(columns={
 df_combined["gene_name"] = df_combined["gene_id"].map(ENSG_to_gene_name_map).str.upper()
 df_combined["gene_aliases"] = df_combined["gene_id"].map(ENSG_to_gene_name_aliases_map).str.upper()
 
+# move the gene_id, gene_name, and gene_aliases columns to the front
+df_combined = df_combined[["gene_id", "gene_name", "gene_aliases"] + [c for c in df_combined.columns if c not in ["gene_id", "gene_name", "gene_aliases"]]]
 df_combined.sort_values(by="gene_id", inplace=True)
 
 #timestamp = datetime.now().strftime("%Y_%m_%d")
