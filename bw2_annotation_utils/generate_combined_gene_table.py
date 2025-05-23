@@ -44,6 +44,8 @@ mis_z                                           -0.044129
 """
 
 df_omim = get_omim_table()
+df_omim = df_omim[df_omim["phenotype_mim_number"].notna()]
+
 print(f"Got {len(df_omim):,d} rows from OMIM, containing {len(df_omim['gene_id'].unique()):,d} unique genes")
 df_omim = df_omim[[
     "gene_id",   # ENSG id
@@ -340,6 +342,8 @@ df_combined.rename(columns={
 
 df_combined["gene_name"] = df_combined["gene_id"].map(ENSG_to_gene_name_map).str.upper()
 df_combined["gene_aliases"] = df_combined["gene_id"].map(ENSG_to_gene_name_aliases_map).str.upper()
+
+df_combined.sort_values(by="gene_id", inplace=True)
 
 #timestamp = datetime.now().strftime("%Y_%m_%d")
 #output_path = f"combined_mendelian_gene_disease_table.{len(df_combined)}_genes.{timestamp}.tsv"
