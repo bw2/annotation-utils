@@ -1,11 +1,12 @@
-# Mondo Rare is only available in OWL XML format: https://purl.obolibrary.org/obo/mondo/subsets/mondo-rare.owl
-# Mondo is available in OBO format: https://purl.obolibrary.org/obo/mondo.obo
-import os
+from cache_utils import cache_json
 import lxml.etree
+import os
+import requests
 
 MONDO_RARE_OWL_URL = "https://purl.obolibrary.org/obo/mondo/subsets/mondo-rare.owl"
 MONDO_OBO_URL = "https://purl.obolibrary.org/obo/mondo.obo"
 
+@cache_json
 def get_mondo_rare_disease_terms(mondo_rare_owl_file_path):
     """Get rare disease terms from the mondo-rare.owl file which is a separate download from the main mondo.obo file
 
@@ -31,9 +32,8 @@ def get_mondo_rare_disease_terms(mondo_rare_owl_file_path):
     
     return mondo_rare_disease_terms  # Example: MONDO:0958331
 
-
-def parse_mondo_obo_file(mondo_obo_file_path):
-
+@cache_json
+def download_mondo_obo_file():
     """    
     Parse the mondo.obo file and return a dictionary that maps mondo ids to a record containing the following fields:
     - mondo_id
@@ -55,8 +55,6 @@ def parse_mondo_obo_file(mondo_obo_file_path):
         }
     }
 
-    Args:
-        mondo_obo_file_path: Path to the mondo.obo file
     Returns:
         Dictionary that maps mondo ids to a record containing the above fields
 
@@ -103,53 +101,56 @@ def parse_mondo_obo_file(mondo_obo_file_path):
 
     # top level parent of disease ontology: MONDO:0700096   (Human Disease). It has 42 child terms (eg. MONDO:0002051 integumentary system disorder)
 
+    print("Downloading mondo.obo data")
 
     mondo_id = None
     mondo_id_to_record = {}
-    with open(mondo_obo_file_path, "rt") as f:
-        is_inside_term_record = False
-        for line in f:
-            line = line.rstrip("\n")
-            if line.strip() == "":
+    request = requests.get(MONDO_OBO_URL)
+    request.raise_for_status()
+
+    is_inside_term_record = False
+    for line in request.text.splitlines():
+        line = line.rstrip("\n")
+        if line.strip() == "":
+            is_inside_term_record = False
+            continue
+        if line.startswith("[Term]"):
+            mondo_id = None
+            is_inside_term_record = True
+            continue
+        if not is_inside_term_record:
+            continue
+
+        value = " ".join(line.split(" ")[1:])
+        value = value.split(" {")[0]
+
+        if line.startswith("id: "):
+            if not value.startswith("MONDO:"):
                 is_inside_term_record = False
                 continue
-            if line.startswith("[Term]"):
-                mondo_id = None
-                is_inside_term_record = True
-                continue
-            if not is_inside_term_record:
-                continue
- 
-            value = " ".join(line.split(" ")[1:])
-            value = value.split(" {")[0]
 
-            if line.startswith("id: "):
-                if not value.startswith("MONDO:"):
-                    is_inside_term_record = False
-                    continue
-
-                mondo_id = value
-                mondo_id_to_record[mondo_id] = {
-                    'mondo_id': mondo_id,
-                    'parent_id': None,
-                    'is_category': False,
-                    'xrefs': set(),
-                }
-            elif line.startswith("is_a: "):
-                is_a = value.split(" ! ")[0]
-                if not is_a.startswith("MONDO:"):
-                    continue
-                if is_a == "MONDO:0700096":
-                    mondo_id_to_record[mondo_id]['is_category'] = True
-                mondo_id_to_record[mondo_id]['parent_id'] = is_a
-            elif line.startswith("name: "):
-                mondo_id_to_record[mondo_id]['name'] = value
-            elif line.startswith("subset: ") and value == "rare":
-                mondo_id_to_record[mondo_id]['is_rare'] = True
-            elif line.startswith("def: "):
-                mondo_id_to_record[mondo_id]['definition'] = value
-            elif line.startswith("xref: "):
-                mondo_id_to_record[mondo_id]['xrefs'].add(value)
+            mondo_id = value
+            mondo_id_to_record[mondo_id] = {
+                'mondo_id': mondo_id,
+                'parent_id': None,
+                'is_category': False,
+                'xrefs': [],
+            }
+        elif line.startswith("is_a: "):
+            is_a = value.split(" ! ")[0]
+            if not is_a.startswith("MONDO:"):
+                continue
+            if is_a == "MONDO:0700096":
+                mondo_id_to_record[mondo_id]['is_category'] = True
+            mondo_id_to_record[mondo_id]['parent_id'] = is_a
+        elif line.startswith("name: "):
+            mondo_id_to_record[mondo_id]['name'] = value
+        elif line.startswith("subset: ") and value == "rare":
+            mondo_id_to_record[mondo_id]['is_rare'] = True
+        elif line.startswith("def: "):
+            mondo_id_to_record[mondo_id]['definition'] = value
+        elif line.startswith("xref: "):
+            mondo_id_to_record[mondo_id]['xrefs'].append(value)
 
     return mondo_id_to_record
 
@@ -197,12 +198,7 @@ def get_mondo_ontology():
     """
 
     # parse the OBO file with all terms and subset it to the rare disease terms
-    print("Parsing mondo.obo")
-    mondo_obo_file_path = "mondo.obo"
-    if not os.path.exists(mondo_obo_file_path):
-        os.system(f"wget {MONDO_OBO_URL}")
-
-    mondo_term_lookup = parse_mondo_obo_file(mondo_obo_file_path)
+    mondo_term_lookup = download_mondo_obo_file()
 
     mondo_rare_disease_term_lookup = {
         mondo_id: record for mondo_id, record in mondo_term_lookup.items() if record.get('is_rare')
@@ -214,10 +210,10 @@ def get_mondo_ontology():
         record["category_id"] = get_category_id(mondo_term_lookup, mondo_id)
         record["category"] = mondo_term_lookup[record["category_id"]]["name"] if record["category_id"] else ""
 
-    print(f"Parsed {len(mondo_term_lookup):,d} mondo terms from {mondo_obo_file_path}, of which {len(mondo_rare_disease_term_lookup):,d} are rare disease terms")
+    print(f"Parsed {len(mondo_term_lookup):,d} mondo terms from mondo.obo, of which {len(mondo_rare_disease_term_lookup):,d} are rare disease terms")
 
 
-    #print(f"Parsed {len(mondo_lookup):,d} mondo terms from {mondo_obo_file_path}, {len(mondo_rare_disease_term_lookup):,d} of which are rare disease terms, and {len(set(mondo_rare_disease_terms) & set(mondo_rare_disease_term_lookup.keys())):,d} of which are in the mondo-rare.owl file")
+    #print(f"Parsed {len(mondo_lookup):,d} mondo terms from mondo.obo, {len(mondo_rare_disease_term_lookup):,d} of which are rare disease terms, and {len(set(mondo_rare_disease_terms) & set(mondo_rare_disease_term_lookup.keys())):,d} of which are in the mondo-rare.owl file")
     #print(set(mondo_rare_disease_terms) - set(mondo_rare_disease_term_lookup.keys()))
 
     return mondo_rare_disease_term_lookup

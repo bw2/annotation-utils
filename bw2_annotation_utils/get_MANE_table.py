@@ -1,9 +1,10 @@
+from cache_utils import cache_data_table
 import pandas as pd
-
 
 MANE_SUMMARY_TABLE_URL = "https://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/release_1.4/MANE.GRCh38.v1.4.summary.txt.gz"
 
 
+@cache_data_table
 def get_MANE_ensembl_transcript_table(mane_summary_table_url=MANE_SUMMARY_TABLE_URL):
     """Download the MANE summary table and return it as a pandas DataFrame."""
     return pd.read_table(mane_summary_table_url)

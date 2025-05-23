@@ -1,4 +1,5 @@
 import base64
+from cache_utils import cache_data_table
 import datetime
 import json
 import pandas as pd
@@ -85,6 +86,7 @@ $19                  comments : mutation identified in 1 FASPS3 family
 """
 
 
+@cache_data_table
 def get_omim_table():
     """Retrieves the latest OMIM table"""
 

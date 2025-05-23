@@ -318,8 +318,13 @@ df_gwas = df_gwas.groupby("GWAS_gene_id").agg({
 df_gwas.set_index("GWAS_gene_id", inplace=True)
 
 
-# merge df_omim, df_clingen, df_panel_app, df_fridman
-print(f"Merging OMIM ({len(df_omim):,d} rows), ClinGen ({len(df_clingen):,d} rows), PanelApp ({len(df_panel_app):,d} rows), and Fridman ({len(df_fridman):,d} rows)")
+print(f"Merging "
+      f"OMIM ({len(df_omim):,d} rows) "
+      f"Clingen ({len(df_clingen):,d} rows) "
+      f"PanelApp ({len(df_panel_app):,d} rows) "
+      f"Fridman ({len(df_fridman):,d} rows) "
+      f"GWAS catalog ({len(df_gwas):,d} rows)")
+
 df_combined = pd.merge(df_omim, df_clingen, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging OMIM and ClinGen"
 df_combined = pd.merge(df_combined, df_panel_app, how="outer", left_index=True, right_index=True)

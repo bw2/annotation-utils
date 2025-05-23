@@ -1,11 +1,14 @@
 import argparse
+from cache_utils import cache_json
 import os
+import requests
 from tqdm import tqdm
 
 HP_OBO_URL = 'http://purl.obolibrary.org/obo/hp.obo'
 
 
-def parse_obo_file(file_iterator):
+@cache_json
+def download_hpo_obo_file():
     """
     Parse an .obo file which contains a record for each term in the Human Phenotype Ontology
 
@@ -15,8 +18,12 @@ def parse_obo_file(file_iterator):
         dictionary that maps HPO id strings to a record containing
     """
 
+    print("Downloading hp.obo data")
     hpo_id_to_record = {}
-    for line in tqdm(file_iterator, unit=" lines"):
+    request = requests.get(HP_OBO_URL)
+    request.raise_for_status()
+
+    for line in tqdm(request.text.splitlines(), unit=" lines"):
         line = line.rstrip("\n")
         value = " ".join(line.split(" ")[1:])
         if line.startswith("id: "):
@@ -96,12 +103,7 @@ def main():
     parser.add_argument("hpo_terms", nargs="+", help="comma- or space-separated list of HPO terms like HP:5200135")
     args = parser.parse_args()
 
-    if not os.path.exists("hp.obo"):
-        print("Downloading hp.obo...")
-        os.system(f"wget {HP_OBO_URL}")
-
-    with open("hp.obo") as f:
-        hpo_id_to_record = parse_obo_file(f)
+    hpo_id_to_record = download_hpo_obo_file()
 
     # for each hpo id, find its top level category
     for hpo_id in hpo_id_to_record.keys():
