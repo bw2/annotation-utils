@@ -407,37 +407,37 @@ before = len(df_omim)
 print(f"Starting with {len(df_omim):,d} genes from OMIM")
 df_combined = pd.merge(df_omim, df_clingen, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging OMIM and ClinGen"
-print(f"Added {len(df_clingen) - before:,d} genes from ClinGen")
-
-before = len(df_combined)
-df_combined = pd.merge(df_combined, df_panel_app, how="outer", left_index=True, right_index=True)
-assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with PanelApp"
-print(f"Added {len(df_panel_app) - before:,d} genes from PanelApp")
-
-before = len(df_combined)
-df_combined = pd.merge(df_combined, df_fridman, how="outer", left_index=True, right_index=True)
-assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Fridman"
-print(f"Added {len(df_fridman) - before:,d} genes from Fridman")
-
-before = len(df_combined)
-df_combined = pd.merge(df_combined, df_gwas, how="outer", left_index=True, right_index=True)
-assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GWAS"
-print(f"Added {len(df_gwas) - before:,d} genes from GWAS")
+print(f"Added {len(df_combined) - before:,d} genes from ClinGen")
 
 before = len(df_combined)
 df_combined = pd.merge(df_combined, df_gencc, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GenCC"
-print(f"Added {len(df_gencc) - before:,d} genes from GenCC")
+print(f"Added {len(df_combined) - before:,d} genes from GenCC")
+
+before = len(df_combined)
+df_combined = pd.merge(df_combined, df_panel_app, how="outer", left_index=True, right_index=True)
+assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with PanelApp"
+print(f"Added {len(df_combined) - before:,d} genes from PanelApp")
+
+before = len(df_combined)
+df_combined = pd.merge(df_combined, df_fridman, how="outer", left_index=True, right_index=True)
+assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Fridman"
+print(f"Added {len(df_combined) - before:,d} genes from Fridman")
 
 before = len(df_combined)
 df_combined = pd.merge(df_combined, df_decipher, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Decipher"
-print(f"Added {len(df_decipher) - before:,d} genes from Decipher")
+print(f"Added {len(df_combined) - before:,d} genes from Decipher")
+
+before = len(df_combined)
+df_combined = pd.merge(df_combined, df_gwas, how="outer", left_index=True, right_index=True)
+assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GWAS"
+print(f"Added {len(df_combined) - before:,d} genes from GWAS catalog")
 
 before = len(df_combined)
 df_combined = pd.merge(df_combined, df_clinvar, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with ClinVar"
-print(f"Added {len(df_clinvar) - before:,d} genes from ClinVar")
+print(f"Added {len(df_combined) - before:,d} genes from ClinVar")
 
 df_combined.reset_index(inplace=True)
 df_combined.rename(columns={
