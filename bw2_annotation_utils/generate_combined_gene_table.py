@@ -8,6 +8,8 @@ from bw2_annotation_utils.get_hgnc_table import get_hgnc_table
 from bw2_annotation_utils.get_panel_app_table import get_panel_app_table
 from bw2_annotation_utils.get_ensembl_db_info import get_transcript_id_to_gene_id
 from bw2_annotation_utils.get_gwas_catalog import get_gwas_catalog_rare_disease_records
+from bw2_annotation_utils.get_gencc_table import get_gencc_table
+from bw2_annotation_utils.get_decipher_genes import get_decipher_gene_table
 
 #df = get_clingen_gene_disease_validity_table()
 
@@ -329,12 +331,65 @@ df_gwas = df_gwas.groupby("GWAS_gene_id").agg({
 df_gwas.set_index("GWAS_gene_id", inplace=True)
 
 
+df_gencc = get_gencc_table()
+
+"""
+[
+        "gene_id",
+        "disease_id",
+        "disease_name",
+        "classification",
+        "inheritance",
+    ]
+    """
+df_gencc.rename(columns={
+    "gene_id": "GENCC_gene_id",
+    "disease_id": "GENCC_disease_id",
+    "disease_name": "GENCC_disease_name",
+    "classification": "GENCC_classification",
+    "inheritance": "GENCC_inheritance",
+}, inplace=True)
+
+df_gencc = df_gencc[[
+    "GENCC_gene_id",
+    #"GENCC_disease_id",
+    "GENCC_disease_name",
+    "GENCC_classification",
+    "GENCC_inheritance",
+]]
+
+df_gencc = df_gencc.groupby("GENCC_gene_id").agg({
+    "GENCC_disease_name": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "GENCC_classification": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "GENCC_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
+}).reset_index()
+
+df_gencc.set_index("GENCC_gene_id", inplace=True)
+
+df_decipher = get_decipher_gene_table()
+
+df_decipher.rename(columns={
+    "gene_id": "DECIPHER_gene_id",
+    "inheritance_modes": "DECIPHER_inheritance_modes",
+    "disease_names": "DECIPHER_disease_names",
+}, inplace=True)
+
+df_decipher = df_decipher.groupby("DECIPHER_gene_id").agg({
+    "DECIPHER_inheritance_modes": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "DECIPHER_disease_names": lambda x: separtor.join(normalize_nulls(v) for v in x),
+}).reset_index()
+
+df_decipher.set_index("DECIPHER_gene_id", inplace=True)
+
+
 print(f"Merging "
       f"OMIM ({len(df_omim):,d} rows) "
       f"Clingen ({len(df_clingen):,d} rows) "
       f"PanelApp ({len(df_panel_app):,d} rows) "
       f"Fridman ({len(df_fridman):,d} rows) "
-      f"GWAS catalog ({len(df_gwas):,d} rows)")
+      f"GWAS catalog ({len(df_gwas):,d} rows) "
+      f"GenCC ({len(df_gencc):,d} rows) "
+      f"Decipher ({len(df_decipher):,d} rows)")
 
 df_combined = pd.merge(df_omim, df_clingen, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging OMIM and ClinGen"
@@ -344,6 +399,10 @@ df_combined = pd.merge(df_combined, df_fridman, how="outer", left_index=True, ri
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Fridman"
 df_combined = pd.merge(df_combined, df_gwas, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GWAS"
+df_combined = pd.merge(df_combined, df_gencc, how="outer", left_index=True, right_index=True)
+assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GenCC"
+df_combined = pd.merge(df_combined, df_decipher, how="outer", left_index=True, right_index=True)
+assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Decipher"
 df_combined.reset_index(inplace=True)
 df_combined.rename(columns={
     "index": "gene_id",
