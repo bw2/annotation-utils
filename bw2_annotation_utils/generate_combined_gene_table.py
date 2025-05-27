@@ -10,6 +10,7 @@ from bw2_annotation_utils.get_ensembl_db_info import get_transcript_id_to_gene_i
 from bw2_annotation_utils.get_gwas_catalog import get_gwas_catalog_rare_disease_records
 from bw2_annotation_utils.get_gencc_table import get_gencc_table
 from bw2_annotation_utils.get_decipher_genes import get_decipher_gene_table
+from bw2_annotation_utils.get_clinvar_table import get_clinvar_gene_disease_table
 
 #df = get_clingen_gene_disease_validity_table()
 
@@ -381,6 +382,16 @@ df_decipher = df_decipher.groupby("DECIPHER_gene_id").agg({
 
 df_decipher.set_index("DECIPHER_gene_id", inplace=True)
 
+df_clinvar = get_clinvar_gene_disease_table()
+
+df_clinvar.rename(columns={
+    "gene_id": "CLINVAR_gene_id",
+    "phenotypes": "CLINVAR_phenotypes",
+    "clinical_significance": "CLINVAR_clinical_significance",
+    "gold_stars": "CLINVAR_gold_stars",
+}, inplace=True)
+
+df_clinvar.set_index("CLINVAR_gene_id", inplace=True)
 
 print(f"Merging "
       f"OMIM ({len(df_omim):,d} rows) "
@@ -389,20 +400,45 @@ print(f"Merging "
       f"Fridman ({len(df_fridman):,d} rows) "
       f"GWAS catalog ({len(df_gwas):,d} rows) "
       f"GenCC ({len(df_gencc):,d} rows) "
-      f"Decipher ({len(df_decipher):,d} rows)")
+      f"Decipher ({len(df_decipher):,d} rows) "
+      f"ClinVar ({len(df_clinvar):,d} rows)")
 
+before = len(df_omim)
+print(f"Starting with {len(df_omim):,d} genes from OMIM")
 df_combined = pd.merge(df_omim, df_clingen, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging OMIM and ClinGen"
+print(f"Added {len(df_clingen) - before:,d} genes from ClinGen")
+
+before = len(df_combined)
 df_combined = pd.merge(df_combined, df_panel_app, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with PanelApp"
+print(f"Added {len(df_panel_app) - before:,d} genes from PanelApp")
+
+before = len(df_combined)
 df_combined = pd.merge(df_combined, df_fridman, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Fridman"
+print(f"Added {len(df_fridman) - before:,d} genes from Fridman")
+
+before = len(df_combined)
 df_combined = pd.merge(df_combined, df_gwas, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GWAS"
+print(f"Added {len(df_gwas) - before:,d} genes from GWAS")
+
+before = len(df_combined)
 df_combined = pd.merge(df_combined, df_gencc, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GenCC"
+print(f"Added {len(df_gencc) - before:,d} genes from GenCC")
+
+before = len(df_combined)
 df_combined = pd.merge(df_combined, df_decipher, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Decipher"
+print(f"Added {len(df_decipher) - before:,d} genes from Decipher")
+
+before = len(df_combined)
+df_combined = pd.merge(df_combined, df_clinvar, how="outer", left_index=True, right_index=True)
+assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with ClinVar"
+print(f"Added {len(df_clinvar) - before:,d} genes from ClinVar")
+
 df_combined.reset_index(inplace=True)
 df_combined.rename(columns={
     "index": "gene_id",
