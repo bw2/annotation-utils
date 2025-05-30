@@ -42,6 +42,7 @@ def normalize_nulls(x):
     return x
 
 
+
 @cache_data_table
 def get_gencc_table():
     df_hgnc = get_hgnc_table()
@@ -65,9 +66,30 @@ def get_gencc_table():
         "inheritance",
     ]]
 
+    """
+    Autosomal recessive     10132
+    Autosomal dominant       8913
+    X-linked                 1004
+    Unknown                   928
+    Semidominant              139
+    Mitochondrial              98
+    Y-linked inheritance        2
+    X-linked recessive          2
+    """
+    # rename using dictionary
+    df["inheritance"] = df["inheritance"].map({
+        "Autosomal recessive": "AR",
+        "Autosomal dominant": "AD",
+        "Semidominant": "SD",
+        "Mitochondrial": "MITO",
+        "X-linked recessive": "XR",
+        "X-linked": "XR",
+    })
+
     return df
 
 
 if __name__ == "__main__":
     df = get_gencc_table()
     print(df)
+    print(df["inheritance"].value_counts())

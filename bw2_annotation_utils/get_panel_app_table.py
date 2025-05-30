@@ -53,7 +53,43 @@ def get_panel_app_table():
 
         print(f"Retrieved {url}  total rows: {len(rows)}")
 
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+
+    # rename mode_of_inheritance
+    """
+    BIALLELIC, autosomal or pseudoautosomal                                                                                                    35467
+    MONOALLELIC, autosomal or pseudoautosomal, NOT imprinted                                                                                   11194
+    MONOALLELIC, autosomal or pseudoautosomal, imprinted status unknown                                                                         6076
+    BOTH monoallelic and biallelic, autosomal or pseudoautosomal                                                                                3571
+    Unknown                                                                                                                                     3351
+    X-LINKED: hemizygous mutation in males, biallelic mutations in females                                                                      2307
+    X-LINKED: hemizygous mutation in males, monoallelic mutations in females may cause disease (may be less severe, later onset than males)     1364
+    BOTH monoallelic and biallelic (but BIALLELIC mutations cause a more SEVERE disease form), autosomal or pseudoautosomal                      607
+    MITOCHONDRIAL                                                                                                                                374
+    Other                                                                                                                                        284
+    MONOALLELIC, autosomal or pseudoautosomal, maternally imprinted (paternal allele expressed)                                                  201
+    MONOALLELIC, autosomal or pseudoautosomal, paternally imprinted (maternal allele expressed)                                                  138
+    Other - please specifiy in evaluation comments                                                                                                34
+    Other - please specify in evaluation comments                                                                                                 14
+    """
+    df["mode_of_inheritance"] = df["mode_of_inheritance"].map({
+        "BIALLELIC, autosomal or pseudoautosomal": "AR",
+        "MONOALLELIC, autosomal or pseudoautosomal, NOT imprinted": "AD",
+        "MONOALLELIC, autosomal or pseudoautosomal, imprinted status unknown": "AD",
+        "BOTH monoallelic and biallelic, autosomal or pseudoautosomal": "AD/AR",
+        "Unknown": "Unknown",
+        "X-LINKED: hemizygous mutation in males, biallelic mutations in females": "XR",
+        "X-LINKED: hemizygous mutation in males, monoallelic mutations in females may cause disease (may be less severe, later onset than males)": "XD",
+        "BOTH monoallelic and biallelic (but BIALLELIC mutations cause a more SEVERE disease form), autosomal or pseudoautosomal": "AD/AR (AR is more severe)",
+        "MITOCHONDRIAL": "MITO",
+        "Other": "Other",
+        "MONOALLELIC, autosomal or pseudoautosomal, maternally imprinted (paternal allele expressed)": "AD (maternally imprinted, paternal allele expressed)",
+        "MONOALLELIC, autosomal or pseudoautosomal, paternally imprinted (maternal allele expressed)": "AD (paternally imprinted, maternal allele expressed)",
+        "Other - please specifiy in evaluation comments": "Other",
+        "Other - please specify in evaluation comments": "Other",
+    })
+
+    return df
 
 
 if __name__ == "__main__":
@@ -62,6 +98,7 @@ if __name__ == "__main__":
     df = get_panel_app_table()
     print(df)
 
+    print(df["mode_of_inheritance"].value_counts())
 
 
 """

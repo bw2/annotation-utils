@@ -21,6 +21,7 @@ def normalize_nulls(x):
 
 df_hgnc = get_hgnc_table()
 HGNC_to_ENSG_map = dict(zip(df_hgnc["HGNC ID"], df_hgnc["Ensembl gene ID"]))
+ENSG_to_HGNC_map = dict(zip(df_hgnc["Ensembl gene ID"], df_hgnc["HGNC ID"]))
 ENSG_to_gene_name_map = dict(zip(df_hgnc["Ensembl gene ID"], df_hgnc["Approved symbol"]))
 ENSG_to_gene_name_aliases_map = dict(zip(df_hgnc["Ensembl gene ID"], df_hgnc["Alias symbols"]))
 
@@ -220,7 +221,10 @@ df_panel_app = df_panel_app.groupby(["gene_id", "source"]).agg({
 
 # drop column "source"
 df_panel_app_uk = df_panel_app[df_panel_app["source"] == PANEL_APP_UK_LABEL].drop("source", axis=1)
+df_panel_app_uk["InPanelAppUK"] = True
 df_panel_app_au = df_panel_app[df_panel_app["source"] == PANEL_APP_AU_LABEL].drop("source", axis=1)
+df_panel_app_au["InPanelAppAU"] = True
+
 for panel_app_label, df_pannel_app in [
     ("UK", df_panel_app_uk),
     ("AU", df_panel_app_au),
@@ -389,19 +393,33 @@ df_clinvar.rename(columns={
     "phenotypes": "CLINVAR_phenotypes",
     "clinical_significance": "CLINVAR_clinical_significance",
     "gold_stars": "CLINVAR_stars",
+    "major_consequences": "CLINVAR_variant_consequences",
 }, inplace=True)
 
 df_clinvar.set_index("CLINVAR_gene_id", inplace=True)
 
+include_GWAS = False
+include_Fridman = True
+
 print(f"Merging "
       f"OMIM ({len(df_omim):,d} rows) "
-      f"Clingen ({len(df_clingen):,d} rows) "
+      f"ClinGen ({len(df_clingen):,d} rows) "
       f"PanelApp ({len(df_panel_app):,d} rows) "
-      f"Fridman ({len(df_fridman):,d} rows) "
-      f"GWAS catalog ({len(df_gwas):,d} rows) "
       f"GenCC ({len(df_gencc):,d} rows) "
       f"Decipher ({len(df_decipher):,d} rows) "
-      f"ClinVar ({len(df_clinvar):,d} rows)")
+      f"ClinVar ({len(df_clinvar):,d} rows)" +
+      (f"GWAS catalog ({len(df_gwas):,d} rows)" if include_GWAS else "") +
+      (f"Fridman ({len(df_fridman):,d} rows)" if include_Fridman else "")
+)
+
+df_omim["InOMIM"] = True
+df_clingen["InClinGen"] = True
+df_gencc["InGenCC"] = True
+df_decipher["InDecipher"] = True
+df_clinvar["InClinVar"] = True
+df_gwas["InGWAS"] = True
+df_fridman["InFridman"] = True
+
 
 before = list(df_omim.index)
 print(f"Starting with {len(df_omim):,d} genes from OMIM")
@@ -420,37 +438,74 @@ assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids
 print(f"Added {len(df_combined) - len(before):,d} genes from PanelApp - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
 
 before = list(df_combined.index)
-df_combined = pd.merge(df_combined, df_fridman, how="outer", left_index=True, right_index=True)
-assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Fridman"
-print(f"Added {len(df_combined) - len(before):,d} genes from Fridman et al. 2025 list of recessive genes") #- examples: {', '.join(list(set(df_combined.index) - set(before))[:5])}")
-
-before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_decipher, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Decipher"
 print(f"Added {len(df_combined) - len(before):,d} genes from Decipher - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
-
-before = list(df_combined.index)
-df_combined = pd.merge(df_combined, df_gwas, how="outer", left_index=True, right_index=True)
-assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GWAS"
-print(f"Added {len(df_combined) - len(before):,d} genes from GWAS catalog") #- examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
 
 before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_clinvar, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with ClinVar"
 print(f"Added {len(df_combined) - len(before):,d} genes from ClinVar - examples: {', '.join(list(set(sorted(df_combined.index)) - set(sorted(before)))[:20])}")
 
+if include_GWAS:
+    before = list(df_combined.index)
+    df_combined = pd.merge(df_combined, df_gwas, how="outer", left_index=True, right_index=True)
+    assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GWAS"
+    print(f"Added {len(df_combined) - len(before):,d} genes from GWAS catalog") #- examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
+
+if include_Fridman:
+    before = list(df_combined.index)
+    df_combined = pd.merge(df_combined, df_fridman, how="outer", left_index=True, right_index=True)
+    assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Fridman"
+    print(f"Added {len(df_combined) - len(before):,d} genes from Fridman et al. 2025 list of recessive genes") #- examples: {', '.join(list(set(df_combined.index) - set(before))[:5])}")
+
+
 df_combined.reset_index(inplace=True)
 df_combined.rename(columns={
     "index": "gene_id",
 }, inplace=True)
 
-df_combined["gene_name"] = df_combined["gene_id"].map(ENSG_to_gene_name_map).str.upper()
-df_combined["gene_aliases"] = df_combined["gene_id"].map(ENSG_to_gene_name_aliases_map).str.upper()
 
-# move the gene_id, gene_name, and gene_aliases columns to the front
-initial_columns = ["gene_id", "gene_name", "gene_aliases", "major_consequences"]
+df_combined["gene_symbol"] = df_combined["gene_id"].map(ENSG_to_gene_name_map).str.upper()
+df_combined["gene_aliases"] = df_combined["gene_id"].map(ENSG_to_gene_name_aliases_map).str.upper()
+df_combined["hgnc_gene_id"] = df_combined["gene_id"].map(ENSG_to_HGNC_map)
+if df_combined["hgnc_gene_id"].isna().sum() > 0:
+    print(f"WARNING: {df_combined['hgnc_gene_id'].isna().sum():,d} genes had no HGNC id")
+    print(df_combined[df_combined["hgnc_gene_id"].isna()])
+
+def compute_present_in_string(row):
+    present_in = []
+    if row["InOMIM"] == True:
+        present_in.append("OMIM")
+    if row["InClinGen"] == True:
+        present_in.append("ClinGen")
+    if row["InGenCC"] == True:
+        present_in.append("GenCC")
+    if row["InPanelAppUK"] == True:
+        present_in.append("PanelAppUK")
+    if row["InPanelAppAU"] == True:
+        present_in.append("PanelAppAU")
+    if row["InDecipher"] == True:
+        present_in.append("Decipher")
+    if row["InClinVar"] == True:
+        present_in.append("ClinVar")
+    if include_GWAS and row["InGWAS"] == True:
+        present_in.append("GWAS")
+    if include_Fridman and row["InFridman"] == True:
+        present_in.append("Fridman")
+    return f"{len(present_in)}: " + ", ".join(present_in)
+
+df_combined["present_in"] = df_combined.apply(compute_present_in_string, axis=1)
+df_combined.drop(columns=["InOMIM", "InClinGen", "InGenCC", "InDecipher", "InClinVar"], inplace=True)
+if include_GWAS:
+    df_combined.drop(columns=["InGWAS"], inplace=True)
+if include_Fridman:
+    df_combined.drop(columns=["InFridman"], inplace=True)
+
+# move the gene_id, gene_symbol, and gene_aliases columns to the front
+initial_columns = ["gene_id", "gene_symbol", "gene_aliases", "hgnc_gene_id", "present_in"]
 df_combined = df_combined[initial_columns + [c for c in df_combined.columns if c not in initial_columns]]
-df_combined.sort_values(by="gene_id", inplace=True)
+#df_combined.sort_values(by=["present_in", "gene_id"], inplace=True)
 
 #timestamp = datetime.now().strftime("%Y_%m_%d")
 #output_path = f"combined_mendelian_gene_disease_table.{len(df_combined)}_genes.{timestamp}.tsv"

@@ -111,6 +111,61 @@ def get_omim_table():
     omim_df["mis_z"] = omim_df["mis_z"].replace("", float('nan')).replace("NA", float('nan')).astype(float)
     omim_df["oe_lof_upper"] = omim_df["oe_lof_upper"].replace("", float('nan')).replace("NA", float('nan')).astype(float)
 
+    """
+    Autosomal recessive                                          3333
+    Autosomal dominant                                           2480
+    X-linked recessive                                            217
+    Autosomal dominant, Autosomal recessive                       209
+    X-linked                                                       75
+    X-linked dominant                                              69
+    Somatic mutation, Autosomal dominant                           60
+    Multifactorial                                                 31
+    Multifactorial, Autosomal dominant, Autosomal recessive        12
+    Digenic recessive, Autosomal recessive                         11
+    Somatic mutation                                               10
+    Autosomal dominant, Multifactorial                              9
+    Digenic recessive                                               8
+    Isolated cases, Autosomal dominant                              7
+    Digenic dominant, Autosomal recessive                           6
+    X-linked dominant, X-linked recessive                           5
+    Isolated cases                                                  5
+    Digenic dominant                                                5
+    ?Autosomal dominant                                             4
+    Digenic dominant, Autosomal dominant, Autosomal recessive       4
+    Somatic mutation, Autosomal dominant, Autosomal recessive       4
+    Digenic dominant, Autosomal dominant                            3
+    X-linked, Isolated cases, Multifactorial                        3
+    Y-linked                                                        3
+    Multifactorial, Autosomal recessive                             2
+    Somatic mosaicism, Autosomal recessive                          2
+    Pseudoautosomal dominant                                        2
+    Pseudoautosomal recessive                                       2
+    Isolated cases, Somatic mutation                                1
+    Mitochondrial                                                   1
+    ?Autosomal dominant, Autosomal recessive                        1
+    X-linked, Somatic mosaicism                                     1
+    Somatic mosaicism, Autosomal dominant                           1
+    X-linked dominant, Somatic mosaicism                            1
+    """    
+
+    # rename inheritance
+    omim_df["phenotype_inheritance"] = omim_df["phenotype_inheritance"].map({
+        "Autosomal recessive": "AR",
+        "Autosomal dominant": "AD",
+        "X-linked recessive": "XR",
+        "X-linked dominant": "XD",
+        "X-linked": "XR",
+        "Autosomal dominant, Autosomal recessive": "AD/AR",
+        "X-linked dominant, X-linked recessive": "XD/XR",
+        "Somatic mutation, Autosomal dominant": "Somatic/AD",
+        "Somatic mutation, Autosomal recessive": "Somatic/AR",
+        "Somatic mutation, Autosomal dominant, Autosomal recessive": "Somatic/AD/AR",
+        "Somatic mosaicism, Autosomal dominant": "Somatic/AD",
+        "Somatic mosaicism, Autosomal recessive": "Somatic/AR",
+        "Somatic mutation": "Somatic",
+        "Mitochondrial": "MITO",
+    })
+
     return omim_df[OUTPUT_COLUMNS]
 
 
@@ -125,6 +180,7 @@ if __name__ == "__main__":
     print(f"Wrote {len(df)} records to {output_path}")
 
 
+    print(df["phenotype_inheritance"].value_counts())
 """
 5/19/2025 OMIM Table:
 
