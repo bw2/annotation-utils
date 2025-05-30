@@ -4,7 +4,7 @@ import pandas as pd
 from bw2_annotation_utils.get_panel_app_table import get_panel_app_table
 from bw2_annotation_utils.get_omim_table import get_omim_table
 from bw2_annotation_utils.get_clingen_table import get_clingen_gene_disease_validity_table
-from bw2_annotation_utils.get_hgnc_table import get_hgnc_table
+from bw2_annotation_utils.get_hgnc_table import get_hgnc_table, get_hgnc_to_ensg_id_map, get_ensg_id_to_hgnc_id_map
 from bw2_annotation_utils.get_panel_app_table import get_panel_app_table
 from bw2_annotation_utils.get_ensembl_db_info import get_transcript_id_to_gene_id
 from bw2_annotation_utils.get_gwas_catalog import get_gwas_catalog_rare_disease_records
@@ -19,9 +19,9 @@ separtor = "; "
 def normalize_nulls(x):
     return str(x) if not pd.isna(x) else ""
 
+HGNC_to_ENSG_map = get_hgnc_to_ensg_id_map()
+ENSG_to_HGNC_map = get_ensg_id_to_hgnc_id_map()
 df_hgnc = get_hgnc_table()
-HGNC_to_ENSG_map = dict(zip(df_hgnc["HGNC ID"], df_hgnc["Ensembl gene ID"]))
-ENSG_to_HGNC_map = dict(zip(df_hgnc["Ensembl gene ID"], df_hgnc["HGNC ID"]))
 ENSG_to_gene_name_map = dict(zip(df_hgnc["Ensembl gene ID"], df_hgnc["Approved symbol"]))
 ENSG_to_gene_name_aliases_map = dict(zip(df_hgnc["Ensembl gene ID"], df_hgnc["Alias symbols"]))
 
@@ -408,8 +408,8 @@ print(f"Merging "
       f"GenCC ({len(df_gencc):,d} rows) "
       f"Decipher ({len(df_decipher):,d} rows) "
       f"ClinVar ({len(df_clinvar):,d} rows)" +
-      (f"GWAS catalog ({len(df_gwas):,d} rows)" if include_GWAS else "") +
-      (f"Fridman ({len(df_fridman):,d} rows)" if include_Fridman else "")
+      (f"GWAS catalog ({len(df_gwas):,d} rows) " if include_GWAS else "") +
+      (f"Fridman ({len(df_fridman):,d} rows) " if include_Fridman else "")
 )
 
 df_omim["InOMIM"] = True

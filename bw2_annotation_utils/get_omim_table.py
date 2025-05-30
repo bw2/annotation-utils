@@ -1,9 +1,10 @@
 import base64
-from cache_utils import cache_data_table
 import datetime
 import json
 import pandas as pd
 import requests
+
+from bw2_annotation_utils.cache_utils import cache_data_table
 
 INPUT_TABLE_HEADER = [
     'mim_number',                   # 0

@@ -38,13 +38,18 @@ def get_clingen_dosage_sensitivity_table():
 if __name__ == "__main__":
     pd.set_option('display.max_columns', 500)
 
-    df = get_clingen_gene_disease_validity_table()
-    print("Gene-Disease Validity Table columns:")
-    print(df)
-
     df = get_clingen_dosage_sensitivity_table()
     print("Dosage Sensitivity Table columns:")
-    print(df)
+    print(df.iloc[0])
+
+    df = get_clingen_gene_disease_validity_table()
+    print("Gene-Disease Validity Table columns:")
+    print(df.iloc[0])
+
+    print(f"Inheritance column:")
+    print(df["MOI"].value_counts())
+
+
 
 
 """
