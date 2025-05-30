@@ -166,8 +166,8 @@ def get_decipher_gene_table():
 
         for gene_id, disease_name_and_inheritance_mode in gene_id_to_disease_name.items():
             sorted_disease_name_and_inheritance_mode = sorted(disease_name_and_inheritance_mode)
-            inheritance_modes = ", ".join([x[0] for x in sorted_disease_name_and_inheritance_mode])
-            disease_names = ", ".join([x[1] for x in sorted_disease_name_and_inheritance_mode])
+            inheritance_modes = "; ".join([x[0] for x in sorted_disease_name_and_inheritance_mode])
+            disease_names = "; ".join([x[1] for x in sorted_disease_name_and_inheritance_mode])
 
             output_records.append({
                 "gene_id": gene_id,

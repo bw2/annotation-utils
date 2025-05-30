@@ -1,6 +1,8 @@
 from datetime import datetime
 import os
 import pandas as pd
+import re
+
 from bw2_annotation_utils.get_panel_app_table import get_panel_app_table
 from bw2_annotation_utils.get_omim_table import get_omim_table
 from bw2_annotation_utils.get_clingen_table import get_clingen_gene_disease_validity_table
@@ -186,6 +188,8 @@ assert set(df_panel_app["source"]) == {
     PANEL_APP_UK_LABEL, PANEL_APP_AU_LABEL,
 }
 print(f"Got {len(df_panel_app):,d} rows from PanelApp, containing {len(df_panel_app['gene_id'].unique()):,d} unique genes")
+
+df_panel_app["phenotypes"] = df_panel_app["phenotypes"].str.replace("No OMIM phenotype", "")
 
 before = len(df_panel_app)
 df_panel_app["gene_id"] = df_panel_app["gene_id"].fillna(df_panel_app["hgnc"].map(HGNC_to_ENSG_map))
@@ -379,12 +383,12 @@ df_decipher = get_decipher_gene_table()
 
 df_decipher.rename(columns={
     "gene_id": "DECIPHER_gene_id",
-    "inheritance_modes": "DECIPHER_inheritance_modes",
+    "inheritance_modes": "DECIPHER_inheritance",
     "disease_names": "DECIPHER_disease_names",
 }, inplace=True)
 
 df_decipher = df_decipher.groupby("DECIPHER_gene_id").agg({
-    "DECIPHER_inheritance_modes": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "DECIPHER_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "DECIPHER_disease_names": lambda x: separtor.join(normalize_nulls(v) for v in x),
 }).reset_index()
 
@@ -501,15 +505,33 @@ def compute_present_in_string(row):
     return f"{len(present_in)}: " + ", ".join(present_in)
 
 df_combined["present_in"] = df_combined.apply(compute_present_in_string, axis=1)
-df_combined.drop(columns=["InOMIM", "InClinGen", "InGenCC", "InDecipher", "InClinVar"], inplace=True)
+df_combined.drop(columns=["InOMIM", "InClinGen", "InGenCC", "InPanelAppAU", "InPanelAppUK", "InDecipher", "InClinVar"], inplace=True)
 
 if include_GWAS:
     df_combined.drop(columns=["InGWAS"], inplace=True)
 if include_Fridman:
     df_combined.drop(columns=["InFridman"], inplace=True)
 
+def summarize_inheritance(row):
+    inheritance = set()
+    for column in [
+        "OMIM_inheritance",
+        "CLINGEN_inheritance",
+        "GENCC_inheritance",
+        "PANEL_APP_UK_inheritance",
+        "PANEL_APP_AU_inheritance",
+        "DECIPHER_inheritance",
+        "FRIDMAN_inheritance",
+    ]:
+        if isinstance(row[column], str):
+            inheritance.update({i.strip() for i in row[column].split(";") if i.strip() != ""})
+
+    return "" if len(inheritance) == 0 else "; ".join(sorted(inheritance))
+
+df_combined["inheritance"] = df_combined.apply(summarize_inheritance, axis=1)
+
 # move the gene_id, gene_symbol, and gene_aliases columns to the front
-initial_columns = ["gene_id", "gene_symbol", "gene_aliases", "hgnc_gene_id", "present_in"]
+initial_columns = ["gene_id", "gene_symbol", "gene_aliases", "hgnc_gene_id", "inheritance", "present_in"]
 df_combined = df_combined[initial_columns + [c for c in df_combined.columns if c not in initial_columns]]
 #df_combined.sort_values(by=["present_in", "gene_id"], inplace=True)
 
