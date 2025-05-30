@@ -388,7 +388,7 @@ df_clinvar.rename(columns={
     "gene_id": "CLINVAR_gene_id",
     "phenotypes": "CLINVAR_phenotypes",
     "clinical_significance": "CLINVAR_clinical_significance",
-    "gold_stars": "CLINVAR_gold_stars",
+    "gold_stars": "CLINVAR_stars",
 }, inplace=True)
 
 df_clinvar.set_index("CLINVAR_gene_id", inplace=True)
@@ -403,41 +403,41 @@ print(f"Merging "
       f"Decipher ({len(df_decipher):,d} rows) "
       f"ClinVar ({len(df_clinvar):,d} rows)")
 
-before = len(df_omim)
+before = list(df_omim.index)
 print(f"Starting with {len(df_omim):,d} genes from OMIM")
 df_combined = pd.merge(df_omim, df_clingen, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging OMIM and ClinGen"
-print(f"Added {len(df_combined) - before:,d} genes from ClinGen")
+print(f"Added {len(df_combined) - len(before):,d} genes from ClinGen - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
 
-before = len(df_combined)
+before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_gencc, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GenCC"
-print(f"Added {len(df_combined) - before:,d} genes from GenCC")
+print(f"Added {len(df_combined) - len(before):,d} genes from GenCC - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
 
-before = len(df_combined)
+before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_panel_app, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with PanelApp"
-print(f"Added {len(df_combined) - before:,d} genes from PanelApp")
+print(f"Added {len(df_combined) - len(before):,d} genes from PanelApp - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
 
-before = len(df_combined)
+before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_fridman, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Fridman"
-print(f"Added {len(df_combined) - before:,d} genes from Fridman")
+print(f"Added {len(df_combined) - len(before):,d} genes from Fridman et al. 2025 list of recessive genes") #- examples: {', '.join(list(set(df_combined.index) - set(before))[:5])}")
 
-before = len(df_combined)
+before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_decipher, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Decipher"
-print(f"Added {len(df_combined) - before:,d} genes from Decipher")
+print(f"Added {len(df_combined) - len(before):,d} genes from Decipher - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
 
-before = len(df_combined)
+before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_gwas, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GWAS"
-print(f"Added {len(df_combined) - before:,d} genes from GWAS catalog")
+print(f"Added {len(df_combined) - len(before):,d} genes from GWAS catalog") #- examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
 
-before = len(df_combined)
+before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_clinvar, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with ClinVar"
-print(f"Added {len(df_combined) - before:,d} genes from ClinVar")
+print(f"Added {len(df_combined) - len(before):,d} genes from ClinVar - examples: {', '.join(list(set(sorted(df_combined.index)) - set(sorted(before)))[:20])}")
 
 df_combined.reset_index(inplace=True)
 df_combined.rename(columns={
@@ -448,7 +448,8 @@ df_combined["gene_name"] = df_combined["gene_id"].map(ENSG_to_gene_name_map).str
 df_combined["gene_aliases"] = df_combined["gene_id"].map(ENSG_to_gene_name_aliases_map).str.upper()
 
 # move the gene_id, gene_name, and gene_aliases columns to the front
-df_combined = df_combined[["gene_id", "gene_name", "gene_aliases"] + [c for c in df_combined.columns if c not in ["gene_id", "gene_name", "gene_aliases"]]]
+initial_columns = ["gene_id", "gene_name", "gene_aliases", "major_consequences"]
+df_combined = df_combined[initial_columns + [c for c in df_combined.columns if c not in initial_columns]]
 df_combined.sort_values(by="gene_id", inplace=True)
 
 #timestamp = datetime.now().strftime("%Y_%m_%d")
