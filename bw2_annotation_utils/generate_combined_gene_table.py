@@ -17,7 +17,11 @@ from bw2_annotation_utils.get_clinvar_table import get_clinvar_gene_disease_tabl
 separtor = "; "
 
 def normalize_nulls(x):
-    return str(x) if not pd.isna(x) else ""
+    x = x if not pd.isna(x) else ""
+    if isinstance(x, float) and x.is_integer():
+        x = int(x)
+    
+    return str(x)
 
 HGNC_to_ENSG_map = get_hgnc_to_ensg_id_map()
 ENSG_to_HGNC_map = get_ensg_id_to_hgnc_id_map()
@@ -497,6 +501,7 @@ def compute_present_in_string(row):
 
 df_combined["present_in"] = df_combined.apply(compute_present_in_string, axis=1)
 df_combined.drop(columns=["InOMIM", "InClinGen", "InGenCC", "InDecipher", "InClinVar"], inplace=True)
+
 if include_GWAS:
     df_combined.drop(columns=["InGWAS"], inplace=True)
 if include_Fridman:
@@ -512,3 +517,9 @@ df_combined = df_combined[initial_columns + [c for c in df_combined.columns if c
 output_path = f"combined_mendelian_gene_disease_table.tsv"
 df_combined.to_csv(output_path, sep="\t", index=False)
 print(f"Wrote {len(df_combined):,d} genes to {output_path}")
+
+output_path = f"combined_mendelian_gene_disease_table.only_in_clinvar.tsv"
+df_clinvar_only = df_combined[(df_combined["present_in"] == "1: ClinVar") | (df_combined["present_in"] == "2: ClinVar, Fridman")]
+df_clinvar_only.to_csv(output_path, sep="\t", index=False)
+print(f"Wrote {len(df_clinvar_only):,d} genes to {output_path}")
+
