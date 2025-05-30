@@ -404,6 +404,7 @@ df_clinvar.set_index("CLINVAR_gene_id", inplace=True)
 
 include_GWAS = False
 include_Fridman = True
+print_example_genes = False
 
 print(f"Merging "
       f"OMIM ({len(df_omim):,d} rows) "
@@ -411,7 +412,7 @@ print(f"Merging "
       f"PanelApp ({len(df_panel_app):,d} rows) "
       f"GenCC ({len(df_gencc):,d} rows) "
       f"Decipher ({len(df_decipher):,d} rows) "
-      f"ClinVar ({len(df_clinvar):,d} rows)" +
+      f"ClinVar ({len(df_clinvar):,d} rows) " +
       (f"GWAS catalog ({len(df_gwas):,d} rows) " if include_GWAS else "") +
       (f"Fridman ({len(df_fridman):,d} rows) " if include_Fridman else "")
 )
@@ -429,39 +430,39 @@ before = list(df_omim.index)
 print(f"Starting with {len(df_omim):,d} genes from OMIM")
 df_combined = pd.merge(df_omim, df_clingen, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging OMIM and ClinGen"
-print(f"Added {len(df_combined) - len(before):,d} genes from ClinGen - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
+print(f"Added {len(df_combined) - len(before):,d} genes from ClinGen" + (f" - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}" if print_example_genes else ""))
 
 before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_gencc, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GenCC"
-print(f"Added {len(df_combined) - len(before):,d} genes from GenCC - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
+print(f"Added {len(df_combined) - len(before):,d} genes from GenCC" + (f" - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}" if print_example_genes else ""))
 
 before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_panel_app, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with PanelApp"
-print(f"Added {len(df_combined) - len(before):,d} genes from PanelApp - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
+print(f"Added {len(df_combined) - len(before):,d} genes from PanelApp" + (f" - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}" if print_example_genes else ""))
 
 before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_decipher, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Decipher"
-print(f"Added {len(df_combined) - len(before):,d} genes from Decipher - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
+print(f"Added {len(df_combined) - len(before):,d} genes from Decipher" + (f" - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}" if print_example_genes else ""))
 
 before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_clinvar, how="outer", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with ClinVar"
-print(f"Added {len(df_combined) - len(before):,d} genes from ClinVar - examples: {', '.join(list(set(sorted(df_combined.index)) - set(sorted(before)))[:20])}")
+print(f"Added {len(df_combined) - len(before):,d} genes from ClinVar" + (f" - examples: {', '.join(list(set(sorted(df_combined.index)) - set(sorted(before)))[:20])}" if print_example_genes else ""))
 
 if include_GWAS:
     before = list(df_combined.index)
     df_combined = pd.merge(df_combined, df_gwas, how="outer", left_index=True, right_index=True)
     assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with GWAS"
-    print(f"Added {len(df_combined) - len(before):,d} genes from GWAS catalog") #- examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}")
+    print(f"Added {len(df_combined) - len(before):,d} genes from GWAS catalog" + (f" - examples: {', '.join(list(sorted(set(df_combined.index) - set(before)))[:5])}" if print_example_genes else ""))
 
 if include_Fridman:
     before = list(df_combined.index)
     df_combined = pd.merge(df_combined, df_fridman, how="outer", left_index=True, right_index=True)
     assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Fridman"
-    print(f"Added {len(df_combined) - len(before):,d} genes from Fridman et al. 2025 list of recessive genes") #- examples: {', '.join(list(set(df_combined.index) - set(before))[:5])}")
+    print(f"Added {len(df_combined) - len(before):,d} genes from Fridman et al. 2025 list of recessive genes" + (f" - examples: {', '.join(list(set(df_combined.index) - set(before))[:5])}" if print_example_genes else ""))
 
 
 df_combined.reset_index(inplace=True)
