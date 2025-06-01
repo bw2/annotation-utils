@@ -406,7 +406,7 @@ df_clinvar.rename(columns={
 
 df_clinvar.set_index("CLINVAR_gene_id", inplace=True)
 
-include_GWAS = False
+include_GWAS = True
 include_Fridman = True
 print_example_genes = False
 
