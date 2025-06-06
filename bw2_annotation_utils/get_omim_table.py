@@ -55,9 +55,6 @@ OUTPUT_COLUMNS = [
     'date_created',
     'date_updated',
     'mouse_gene_id',
-    'oe_lof_upper',
-    'pLI',
-    'mis_z',
     'text',
     'comments',
 ]

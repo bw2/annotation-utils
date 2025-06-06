@@ -5,7 +5,7 @@ import re
 
 from bw2_annotation_utils.get_panel_app_table import get_panel_app_table
 from bw2_annotation_utils.get_omim_table import get_omim_table
-from bw2_annotation_utils.get_clingen_table import get_clingen_gene_disease_validity_table
+from bw2_annotation_utils.get_clingen_table import get_clingen_gene_disease_validity_table, get_clingen_haploinsufficient_genes_table
 from bw2_annotation_utils.get_hgnc_table import get_hgnc_table, get_hgnc_to_ensg_id_map, get_ensg_id_to_hgnc_id_map
 from bw2_annotation_utils.get_panel_app_table import get_panel_app_table
 from bw2_annotation_utils.get_ensembl_db_info import get_transcript_id_to_gene_id
@@ -13,8 +13,11 @@ from bw2_annotation_utils.get_gwas_catalog import get_gwas_catalog_rare_disease_
 from bw2_annotation_utils.get_gencc_table import get_gencc_table
 from bw2_annotation_utils.get_decipher_genes import get_decipher_gene_table
 from bw2_annotation_utils.get_clinvar_table import get_clinvar_gene_disease_table
+from bw2_annotation_utils.get_constraint_scores import get_constraint_scores
 
-#df = get_clingen_gene_disease_validity_table()
+include_GWAS = True
+include_Fridman = True
+print_example_genes = False
 
 separtor = "; "
 
@@ -67,9 +70,9 @@ df_omim = df_omim[[
     #"gene_symbols", 
     #"gene_description", 
     #"mouse_gene_id", 
-    "oe_lof_upper", 
-    "pLI", 
-    "mis_z",
+    #"oe_lof_upper", 
+    #"pLI", 
+    #"mis_z",
 ]]
 
 df_omim = df_omim.rename(columns={
@@ -79,9 +82,9 @@ df_omim = df_omim.rename(columns={
     "phenotypic_series_number": "OMIM_phenotypic_series_number",
     "phenotype_inheritance": "OMIM_inheritance",
     "phenotype_description": "OMIM_phenotype_description",
-    "oe_lof_upper": "LOEUF",
-    "pLI": "pLI",
-    "mis_z": "mis_z",
+    #"oe_lof_upper": "LOEUF",
+    #"pLI": "pLI",
+    #"mis_z": "mis_z",
 })
 
 
@@ -97,13 +100,33 @@ df_omim = df_omim.groupby("OMIM_gene_id").agg({
     "OMIM_phenotypic_series_number": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "OMIM_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "OMIM_phenotype_description": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "LOEUF": lambda x: normalize_nulls(x.iloc[0]), 
-    "pLI": lambda x: normalize_nulls(x.iloc[0]),
-    "mis_z": lambda x: normalize_nulls(x.iloc[0]),
+    #"LOEUF": lambda x: normalize_nulls(x.iloc[0]), 
+    #"pLI": lambda x: normalize_nulls(x.iloc[0]),
+    #"mis_z": lambda x: normalize_nulls(x.iloc[0]),
 }).reset_index()
 
 
 df_omim.set_index("OMIM_gene_id", inplace=True)
+
+
+"""
+Example:
+GENE SYMBOL                     A4GALT
+GENE ID (HGNC)              HGNC:53947
+HAPLOINSUFFICIENCY SCORE            30
+"""
+
+df_clingen_haploinsufficient_genes = get_clingen_haploinsufficient_genes_table()
+df_clingen_haploinsufficient_genes = df_clingen_haploinsufficient_genes.rename(columns={
+    "HAPLOINSUFFICIENCY SCORE": "CLINGEN_haploinsufficient_score",
+})
+
+df_clingen_haploinsufficient_genes = df_clingen_haploinsufficient_genes[[
+    "GENE ID (HGNC)",
+    "CLINGEN_haploinsufficient_score",
+]]
+
+df_clingen_haploinsufficient_genes.set_index("GENE ID (HGNC)", inplace=True)
 
 
 """
@@ -123,6 +146,7 @@ GCEP                   Charcot-Marie-Tooth Disease Gene Curation Expe...
 df_clingen = get_clingen_gene_disease_validity_table()
 print(f"Got {len(df_clingen):,d} rows from ClinGen, containing {len(df_clingen['GENE ID (HGNC)'].unique()):,d} unique genes")
 
+
 df_clingen = df_clingen.rename(columns={
     "DISEASE LABEL": "CLINGEN_disease_label",
     "DISEASE ID (MONDO)": "CLINGEN_disease_mondo_id",
@@ -130,9 +154,21 @@ df_clingen = df_clingen.rename(columns={
     "CLASSIFICATION": "CLINGEN_classification",
 })
 
+#df_clingen = df_clingen.set_index("GENE ID (HGNC)").join(df_clingen_haploinsufficient_genes, how="outer").reset_index()
+
 df_clingen["CLINGEN_gene_id"] = df_clingen["GENE ID (HGNC)"].map(HGNC_to_ENSG_map)
 hgnc_ids_with_missing_esng = df_clingen[df_clingen['CLINGEN_gene_id'].isna()]['GENE ID (HGNC)'].unique()
 assert len(hgnc_ids_with_missing_esng) == 0, f"Could not convert the following HGNC ids to ENSG: {', '.join(hgnc_ids_with_missing_esng)}"
+
+df_clingen = df_clingen[[
+    "CLINGEN_gene_id",
+    "CLINGEN_disease_label",
+    "CLINGEN_disease_mondo_id",
+    "CLINGEN_inheritance",
+    "CLINGEN_classification",
+    #"CLINGEN_haploinsufficient_score",
+]]
+
 
 before = len(df_clingen)
 df_clingen = df_clingen[df_clingen["CLINGEN_classification"].isin({
@@ -141,18 +177,6 @@ df_clingen = df_clingen[df_clingen["CLINGEN_classification"].isin({
 print("\t", f"Kept {len(df_clingen):,d} out of {before:,d} ({(len(df_clingen) / before):.1%}) rows which had a Definitive, Limited, Moderate, or Strong classification")
 
 
-df_clingen = df_clingen[[
-    "CLINGEN_gene_id",
-    "CLINGEN_disease_label",
-    "CLINGEN_disease_mondo_id",
-    "CLINGEN_inheritance",
-    "CLINGEN_classification",
-    #"GENE_SYMBOL",
-    #"SOP",
-    #"ONLINE_REPORT",
-    #"CLASSIFICATION_DATE",
-    #"GCEP",
-]]
 
 # group by CLINGEN_gene_id and combine the other fields using ; as a separator
 df_clingen = df_clingen.groupby("CLINGEN_gene_id").agg({
@@ -160,9 +184,52 @@ df_clingen = df_clingen.groupby("CLINGEN_gene_id").agg({
     "CLINGEN_disease_mondo_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "CLINGEN_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "CLINGEN_classification": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    #"CLINGEN_haploinsufficient_score": lambda x: max(int(v) for v in x if v != ""), 
 }).reset_index()
 
 df_clingen.set_index("CLINGEN_gene_id", inplace=True)
+
+
+df_constraint_scores = get_constraint_scores()
+
+"""Example:
+
+wm8c1-2cf:~/code/annotation-utils $ python3 bw2_annotation_utils/get_constraint_scores.py
+                       pLI_v2    pLI_v4  lof_oe_v4  lof_oe_ci_lower_v4  lof_oe_ci_upper_v4  mis_oe_v4  mis_oe_ci_lower_v4  mis_oe_ci_upper_v4
+gene_id
+ENSG00000000003  6.607900e-02       NaN        NaN                 NaN                 NaN        NaN                 NaN                 NaN
+ENSG00000000005  3.511900e-03       NaN        NaN                 NaN                 NaN        NaN                 NaN                 NaN
+ENSG00000000419  1.623700e-04  0.124840    0.48616               0.265               0.960     0.8549               0.719               1.020
+ENSG00000000457  2.815100e-01  0.549410    0.38525               0.250               0.613     0.8228               0.764               0.886
+ENSG00000000460  3.352300e-10  0.003679    0.78335               0.459               1.408     1.0024               0.865               1.164
+"""
+
+df_constraint_scores = df_constraint_scores.rename(columns={
+    "gene_id": "CONSTRAINT_scores_gene_id",
+})
+
+df_constraint_scores = df_constraint_scores[[
+    "CONSTRAINT_scores_gene_id",
+    "pLI_v2",
+    "pLI_v4",
+    "lof_oe_v4",
+    #"lof_oe_ci_lower_v4",
+    #"lof_oe_ci_upper_v4",
+    "mis_oe_v4",
+    #"mis_oe_ci_lower_v4",
+    #"mis_oe_ci_upper_v4",
+]]
+
+df_constraint_scores = df_constraint_scores.groupby("CONSTRAINT_scores_gene_id").agg({
+    "pLI_v2": lambda x: max(float(v) for v in x if v != ""),
+    "pLI_v4": lambda x: max(float(v) for v in x if v != ""),
+    "lof_oe_v4": lambda x: min(float(v) for v in x if v != ""),
+    "mis_oe_v4": lambda x: min(float(v) for v in x if v != ""),
+}).reset_index()
+
+df_constraint_scores.set_index("CONSTRAINT_scores_gene_id", inplace=True)
+
+
 
 
 """
@@ -348,13 +415,13 @@ df_gencc = get_gencc_table()
 
 """
 [
-        "gene_id",
-        "disease_id",
-        "disease_name",
-        "classification",
-        "inheritance",
-    ]
-    """
+    "gene_id",
+    "disease_id",
+    "disease_name",
+    "classification",
+    "inheritance",
+]
+"""
 df_gencc.rename(columns={
     "gene_id": "GENCC_gene_id",
     "disease_id": "GENCC_disease_id",
@@ -406,9 +473,6 @@ df_clinvar.rename(columns={
 
 df_clinvar.set_index("CLINVAR_gene_id", inplace=True)
 
-include_GWAS = True
-include_Fridman = True
-print_example_genes = False
 
 print(f"Merging "
       f"OMIM ({len(df_omim):,d} rows) "
@@ -468,6 +532,13 @@ if include_Fridman:
     assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Fridman"
     print(f"Added {len(df_combined) - len(before):,d} genes from Fridman et al. 2025 list of recessive genes" + (f" - examples: {', '.join(list(set(df_combined.index) - set(before))[:5])}" if print_example_genes else ""))
 
+# add constraint scores
+before = list(df_combined.index)
+df_combined = pd.merge(df_combined, df_constraint_scores, how="left", left_index=True, right_index=True)
+assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with constraint scores"
+rows_with_constraint_scores = sum(df_combined["pLI_v2"].notna() | df_combined["pLI_v4"].notna() | df_combined["lof_oe_v4"].notna() | df_combined["mis_oe_v4"].notna())
+print(f"Added constraint scores to {rows_with_constraint_scores:,d} out of {len(df_combined):,d} ({(rows_with_constraint_scores / len(df_combined)):.1%}) genes")
+
 
 df_combined.reset_index(inplace=True)
 df_combined.rename(columns={
@@ -478,9 +549,9 @@ df_combined.rename(columns={
 df_combined["gene_symbol"] = df_combined["gene_id"].map(ENSG_to_gene_name_map).str.upper()
 df_combined["gene_aliases"] = df_combined["gene_id"].map(ENSG_to_gene_name_aliases_map).str.upper()
 df_combined["hgnc_gene_id"] = df_combined["gene_id"].map(ENSG_to_HGNC_map)
-if df_combined["hgnc_gene_id"].isna().sum() > 0:
-    print(f"WARNING: {df_combined['hgnc_gene_id'].isna().sum():,d} genes had no HGNC id")
-    print(df_combined[df_combined["hgnc_gene_id"].isna()])
+#if df_combined["hgnc_gene_id"].isna().sum() > 0:
+#    print(f"WARNING: {df_combined['hgnc_gene_id'].isna().sum():,d} genes had no HGNC id")
+#    print(df_combined[df_combined["hgnc_gene_id"].isna()])
 
 def compute_present_in_string(row):
     present_in = []

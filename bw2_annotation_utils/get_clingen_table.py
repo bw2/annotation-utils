@@ -3,7 +3,7 @@ import requests
 from io import StringIO
 
 from bw2_annotation_utils.cache_utils import cache_data_table
-
+from bw2_annotation_utils.get_hgnc_table import get_hgnc_to_ensg_id_map
 
 def _get_clingen_table(url):
     """Download one of the ClinGen .csv tables and return it as a pandas DataFrame
@@ -31,18 +31,48 @@ def get_clingen_gene_disease_validity_table():
     return _get_clingen_table("https://search.clinicalgenome.org/kb/gene-validity/download")
 
 @cache_data_table
-def get_clingen_dosage_sensitivity_table():
-    return _get_clingen_table("https://search.clinicalgenome.org/kb/gene-dosage/download")
+def get_clingen_haploinsufficient_genes_table():
+    """ClinGen’s Haploinsufficiency (HI) score ranges from 0 to 3, indicating how likely a gene is to cause disease due to loss-of-function (haploinsufficiency):
+
+        0: No evidence for haploinsufficiency.
+        1: Little evidence; haploinsufficiency is unlikely.
+        2: Some evidence; haploinsufficiency is possible but not definitive.
+        3: Sufficient evidence; haploinsufficiency is a known mechanism of disease.
+
+    
+    Values 30 and 40 in ClinGen's HI score system are historical and indicate haploinsufficient regions (e.g. microdeletion syndromes), rather than single genes:
+        30: Some evidence a region is haploinsufficient.
+        40: Strong evidence a region is haploinsufficient.
+    """
+    df = pd.read_table("ftp://ftp.clinicalgenome.org/ClinGen_gene_curation_list_GRCh38.tsv", skiprows=5)
+    df = df[["#Gene Symbol", "Gene ID", "Haploinsufficiency Score"]]
+    df = df.rename(columns={
+        "#Gene Symbol": "GENE SYMBOL",
+        "Gene ID": "GENE ID (HGNC)",
+        "Haploinsufficiency Score": "HAPLOINSUFFICIENCY SCORE",
+    })
+    df = df[df["HAPLOINSUFFICIENCY SCORE"] > 1]
+    df["GENE ID (HGNC)"] = "HGNC:" + df["GENE ID (HGNC)"].astype(str)
+    return df
 
 
 if __name__ == "__main__":
     pd.set_option('display.max_columns', 500)
 
-    df = get_clingen_dosage_sensitivity_table()
-    print("Dosage Sensitivity Table columns:")
+    df = get_clingen_haploinsufficient_genes_table()
+    print("Haploinsufficient Genes Table columns:")
     print(df.iloc[0])
 
+    unknown_hgnc_ids = set(df["GENE ID (HGNC)"]) - set(get_hgnc_to_ensg_id_map().keys())
+    assert len(unknown_hgnc_ids) == 0, f"Unknown HGNC ids in haploinsufficient genes table: {', '.join(unknown_hgnc_ids)}"
+
+
     df = get_clingen_gene_disease_validity_table()
+
+    unknown_hgnc_ids = set(df["GENE ID (HGNC)"]) - set(get_hgnc_to_ensg_id_map().keys())
+    assert len(unknown_hgnc_ids) == 0, f"Unknown HGNC ids in gene-disease validity table: {', '.join(unknown_hgnc_ids)}"
+
+
     print("Gene-Disease Validity Table columns:")
     print(df.iloc[0])
 

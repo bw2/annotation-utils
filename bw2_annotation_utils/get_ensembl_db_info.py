@@ -1,4 +1,4 @@
-from cache_utils import cache_json
+#from cache_utils import cache_json
 import collections
 import pymysql
 
@@ -11,7 +11,9 @@ import pymysql
 
 
 CURRENT_ENSEMBL_DATABASE = "homo_sapiens_core_114_38"
-ENSEMBL_HOST = "useastdb.ensembl.org"
+ENSEMBL_HOST_EAST = "useastdb.ensembl.org"
+ENSEMBL_HOST_MAIN = "ensembldb.ensembl.org"
+
 
 """
 homo_sapiens_cdna_102_38
@@ -47,7 +49,8 @@ def get_gene_id_to_transcript_metadata(
     """
 
     gene_id_to_transcript_id = collections.defaultdict(list)
-    with pymysql.connect(host=ENSEMBL_HOST, user="anonymous", database=database) as conn:
+    host = ENSEMBL_HOST_EAST if database == CURRENT_ENSEMBL_DATABASE else ENSEMBL_HOST_MAIN
+    with pymysql.connect(host=host, user="anonymous", database=database) as conn:
         with conn.cursor() as cursor:
             if only_canonical_transcripts:
                 join_clause = "canonical_transcript_id = transcript_id"
@@ -82,7 +85,7 @@ def get_gene_id_to_transcript_metadata(
     return gene_id_to_transcript_id
 
 
-@cache_json
+
 def get_gene_id_to_transcript_ids(
         database=CURRENT_ENSEMBL_DATABASE,
         only_protein_coding=False,
@@ -110,7 +113,6 @@ def get_gene_id_to_transcript_ids(
     }
 
 
-@cache_json
 def get_transcript_id_to_gene_id(
         database=CURRENT_ENSEMBL_DATABASE,
         only_protein_coding=False,
@@ -137,7 +139,7 @@ def get_transcript_id_to_gene_id(
     }
 
 
-@cache_json
+
 def get_gene_id_to_canonical_transcript_id(database=CURRENT_ENSEMBL_DATABASE, only_protein_coding=False):
     """Returns a dictionary mapping each Ensembl gene_id => canonical transcript id
 
@@ -225,10 +227,9 @@ def get_transcript_created_modified_dates(
         for gene_id, transcript_metadata_list in gene_id_to_transcript_metadata_list.items()
     }
 
-@cache_json
 def get_ensembl_ENST_to_RefSeq_ids(database=CURRENT_ENSEMBL_DATABASE):
-
-    db = pymysql.connect(host=ENSEMBL_HOST, user="anonymous", database=database)
+    host = ENSEMBL_HOST_EAST if database == CURRENT_ENSEMBL_DATABASE else ENSEMBL_HOST_MAIN
+    db = pymysql.connect(host=host, user="anonymous", database=database)
     cursor = db.cursor()
     cursor.execute(" ".join([
         "SELECT",
