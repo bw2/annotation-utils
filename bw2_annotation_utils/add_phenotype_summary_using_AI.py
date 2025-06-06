@@ -64,7 +64,7 @@ def summarize_phenotypes(row):
                 constraint_type.append("mis_oe_v4")
 
             if constraint_type:
-                return f"Const: {', '.join(constraint_type)}"
+                return f"Constrained: {', '.join(constraint_type)}"
             else:
                 return ""
 
