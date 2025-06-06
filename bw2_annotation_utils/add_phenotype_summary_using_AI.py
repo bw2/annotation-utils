@@ -58,13 +58,13 @@ def summarize_phenotypes(row):
                 constraint_type.append("pLI_v2")
             if row["pLI_v4"] >= 0.9:
                 constraint_type.append("pLI_v4")
-            if row["lof_oe_v4"] <= 0.2:
+            if row["lof_oe_ci_upper_v4"] <= 0.2:
                 constraint_type.append("lof_oe_v4")
-            if row["mis_oe_v4"] <= 0.2:
+            if row["mis_oe_ci_upper_v4"] <= 0.2:
                 constraint_type.append("mis_oe_v4")
 
             if constraint_type:
-                return f"Highly Constrained: {', '.join(constraint_type)}"
+                return f"Const: {', '.join(constraint_type)}"
             else:
                 return ""
 
@@ -81,7 +81,7 @@ df["LLM_phenotype_summary"] = df.apply(summarize_phenotypes, axis=1)
 # move the LLM_phenotype_summary column to be after the 'inheritance' column
 initial_columns = [
     "gene_id", "gene_symbol", "gene_aliases", "inheritance", "LLM_phenotype_summary", "present_in",
-    "pLI_v2", "pLI_v4", "lof_oe_v4", "mis_oe_v4", "hgnc_gene_id", 
+    "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4", "hgnc_gene_id", 
 ]
 
 df = df[initial_columns + [c for c in df.columns if c not in initial_columns]]

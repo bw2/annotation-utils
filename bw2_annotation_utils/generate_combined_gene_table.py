@@ -212,19 +212,19 @@ df_constraint_scores = df_constraint_scores[[
     "CONSTRAINT_scores_gene_id",
     "pLI_v2",
     "pLI_v4",
-    "lof_oe_v4",
+    #"lof_oe_v4",
     #"lof_oe_ci_lower_v4",
-    #"lof_oe_ci_upper_v4",
-    "mis_oe_v4",
+    "lof_oe_ci_upper_v4",
+    #"mis_oe_v4",
     #"mis_oe_ci_lower_v4",
-    #"mis_oe_ci_upper_v4",
+    "mis_oe_ci_upper_v4",
 ]]
 
 df_constraint_scores = df_constraint_scores.groupby("CONSTRAINT_scores_gene_id").agg({
     "pLI_v2": lambda x: max(float(v) for v in x if v != ""),
     "pLI_v4": lambda x: max(float(v) for v in x if v != ""),
-    "lof_oe_v4": lambda x: min(float(v) for v in x if v != ""),
-    "mis_oe_v4": lambda x: min(float(v) for v in x if v != ""),
+    "lof_oe_ci_upper_v4": lambda x: min(float(v) for v in x if v != ""),
+    "mis_oe_ci_upper_v4": lambda x: min(float(v) for v in x if v != ""),
 }).reset_index()
 
 df_constraint_scores.set_index("CONSTRAINT_scores_gene_id", inplace=True)
@@ -536,7 +536,7 @@ if include_Fridman:
 before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_constraint_scores, how="left", left_index=True, right_index=True)
 assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with constraint scores"
-rows_with_constraint_scores = sum(df_combined["pLI_v2"].notna() | df_combined["pLI_v4"].notna() | df_combined["lof_oe_v4"].notna() | df_combined["mis_oe_v4"].notna())
+rows_with_constraint_scores = sum(df_combined["pLI_v2"].notna() | df_combined["pLI_v4"].notna() | df_combined["lof_oe_ci_upper_v4"].notna() | df_combined["mis_oe_ci_upper_v4"].notna())
 print(f"Added constraint scores to {rows_with_constraint_scores:,d} out of {len(df_combined):,d} ({(rows_with_constraint_scores / len(df_combined)):.1%}) genes")
 
 # add highly constrained genes that are not in the other sources:
@@ -544,8 +544,8 @@ df_highly_constrained_genes = df_constraint_scores[
     ~df_constraint_scores.index.isin(df_combined.index) & (
         (df_constraint_scores["pLI_v2"] >= 0.9) |
         (df_constraint_scores["pLI_v4"] >= 0.9) |
-        (df_constraint_scores["lof_oe_v4"] <= 0.2) |
-        (df_constraint_scores["mis_oe_v4"] <= 0.2)
+        (df_constraint_scores["lof_oe_ci_upper_v4"] <= 0.2) |
+        (df_constraint_scores["mis_oe_ci_upper_v4"] <= 0.2)
     )
 ]
 
@@ -615,7 +615,7 @@ def summarize_inheritance(row):
 df_combined["inheritance"] = df_combined.apply(summarize_inheritance, axis=1)
 
 # move the gene_id, gene_symbol, and gene_aliases columns to the front
-initial_columns = ["gene_id", "gene_symbol", "gene_aliases", "hgnc_gene_id", "inheritance", "present_in", "pLI_v2", "pLI_v4", "lof_oe_v4", "mis_oe_v4"]
+initial_columns = ["gene_id", "gene_symbol", "gene_aliases", "hgnc_gene_id", "inheritance", "present_in", "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4"]
 df_combined = df_combined[initial_columns + [c for c in df_combined.columns if c not in initial_columns]]
 #df_combined.sort_values(by=["present_in", "gene_id"], inplace=True)
 
