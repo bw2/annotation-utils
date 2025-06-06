@@ -539,6 +539,19 @@ assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids
 rows_with_constraint_scores = sum(df_combined["pLI_v2"].notna() | df_combined["pLI_v4"].notna() | df_combined["lof_oe_v4"].notna() | df_combined["mis_oe_v4"].notna())
 print(f"Added constraint scores to {rows_with_constraint_scores:,d} out of {len(df_combined):,d} ({(rows_with_constraint_scores / len(df_combined)):.1%}) genes")
 
+# add highly constrained genes that are not in the other sources:
+df_highly_constrained_genes = df_constraint_scores[
+    ~df_constraint_scores.index.isin(df_combined.index) & (
+        (df_constraint_scores["pLI_v2"] >= 0.9) |
+        (df_constraint_scores["pLI_v4"] >= 0.9) |
+        (df_constraint_scores["lof_oe_v4"] <= 0.2) |
+        (df_constraint_scores["mis_oe_v4"] <= 0.2)
+    )
+]
+
+print(f"Added {len(df_highly_constrained_genes):,d} highly constrained genes that are not in the other sources")
+df_combined = pd.concat([df_combined, df_highly_constrained_genes])
+
 
 df_combined.reset_index(inplace=True)
 df_combined.rename(columns={
@@ -602,7 +615,7 @@ def summarize_inheritance(row):
 df_combined["inheritance"] = df_combined.apply(summarize_inheritance, axis=1)
 
 # move the gene_id, gene_symbol, and gene_aliases columns to the front
-initial_columns = ["gene_id", "gene_symbol", "gene_aliases", "hgnc_gene_id", "inheritance", "present_in"]
+initial_columns = ["gene_id", "gene_symbol", "gene_aliases", "hgnc_gene_id", "inheritance", "present_in", "pLI_v2", "pLI_v4", "lof_oe_v4", "mis_oe_v4"]
 df_combined = df_combined[initial_columns + [c for c in df_combined.columns if c not in initial_columns]]
 #df_combined.sort_values(by=["present_in", "gene_id"], inplace=True)
 
