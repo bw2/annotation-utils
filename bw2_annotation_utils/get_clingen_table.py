@@ -44,15 +44,15 @@ def get_clingen_haploinsufficient_genes_table():
         30: Some evidence a region is haploinsufficient.
         40: Strong evidence a region is haploinsufficient.
     """
-    df = pd.read_table("ftp://ftp.clinicalgenome.org/ClinGen_gene_curation_list_GRCh38.tsv", skiprows=5)
-    df = df[["#Gene Symbol", "Gene ID", "Haploinsufficiency Score"]]
-    df = df.rename(columns={
-        "#Gene Symbol": "GENE SYMBOL",
-        "Gene ID": "GENE ID (HGNC)",
-        "Haploinsufficiency Score": "HAPLOINSUFFICIENCY SCORE",
-    })
-    df = df[df["HAPLOINSUFFICIENCY SCORE"] > 1]
-    df["GENE ID (HGNC)"] = "HGNC:" + df["GENE ID (HGNC)"].astype(str)
+    df = pd.read_csv("https://search.clinicalgenome.org/kb/gene-dosage/download", skiprows=6, names=[
+        "GENE SYMBOL", "HGNC ID", "HAPLOINSUFFICIENCY", "TRIPLOSENSITIVITY", "ONLINE REPORT", "DATE",
+    ])
+    df = df[["HGNC ID", "HAPLOINSUFFICIENCY"]]
+    df = df[~df["HAPLOINSUFFICIENCY"].isin([
+        "No Evidence for Haploinsufficiency", 
+        "Dosage Sensitivity Unlikely",
+        "Little Evidence for Haploinsufficiency",
+    ])]
     return df
 
 

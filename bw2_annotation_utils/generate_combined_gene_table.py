@@ -109,24 +109,18 @@ df_omim = df_omim.groupby("OMIM_gene_id").agg({
 df_omim.set_index("OMIM_gene_id", inplace=True)
 
 
-"""
-Example:
-GENE SYMBOL                     A4GALT
-GENE ID (HGNC)              HGNC:53947
-HAPLOINSUFFICIENCY SCORE            30
-"""
 
 df_clingen_haploinsufficient_genes = get_clingen_haploinsufficient_genes_table()
 df_clingen_haploinsufficient_genes = df_clingen_haploinsufficient_genes.rename(columns={
-    "HAPLOINSUFFICIENCY SCORE": "CLINGEN_haploinsufficient_score",
+    "HAPLOINSUFFICIENCY": "CLINGEN_haploinsufficient",
 })
 
 df_clingen_haploinsufficient_genes = df_clingen_haploinsufficient_genes[[
-    "GENE ID (HGNC)",
-    "CLINGEN_haploinsufficient_score",
+    "HGNC ID",
+    "CLINGEN_haploinsufficient",
 ]]
 
-df_clingen_haploinsufficient_genes.set_index("GENE ID (HGNC)", inplace=True)
+df_clingen_haploinsufficient_genes.set_index("HGNC ID", inplace=True)
 
 
 """
@@ -154,7 +148,7 @@ df_clingen = df_clingen.rename(columns={
     "CLASSIFICATION": "CLINGEN_classification",
 })
 
-#df_clingen = df_clingen.set_index("GENE ID (HGNC)").join(df_clingen_haploinsufficient_genes, how="outer").reset_index()
+df_clingen = df_clingen.set_index("GENE ID (HGNC)").join(df_clingen_haploinsufficient_genes, how="outer").reset_index()
 
 df_clingen["CLINGEN_gene_id"] = df_clingen["GENE ID (HGNC)"].map(HGNC_to_ENSG_map)
 hgnc_ids_with_missing_esng = df_clingen[df_clingen['CLINGEN_gene_id'].isna()]['GENE ID (HGNC)'].unique()
