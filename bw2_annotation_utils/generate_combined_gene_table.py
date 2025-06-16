@@ -160,7 +160,7 @@ df_clingen = df_clingen[[
     "CLINGEN_disease_mondo_id",
     "CLINGEN_inheritance",
     "CLINGEN_classification",
-    #"CLINGEN_haploinsufficient_score",
+    "CLINGEN_haploinsufficient",
 ]]
 
 
@@ -178,7 +178,7 @@ df_clingen = df_clingen.groupby("CLINGEN_gene_id").agg({
     "CLINGEN_disease_mondo_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "CLINGEN_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
     "CLINGEN_classification": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    #"CLINGEN_haploinsufficient_score": lambda x: max(int(v) for v in x if v != ""), 
+    "CLINGEN_haploinsufficient": lambda x: separtor.join(sorted(set(normalize_nulls(v) for v in x))),
 }).reset_index()
 
 df_clingen.set_index("CLINGEN_gene_id", inplace=True)
