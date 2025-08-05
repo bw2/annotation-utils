@@ -56,6 +56,7 @@ pLI                                               0.40527
 mis_z                                           -0.044129
 """
 
+print("Getting OMIM table")
 df_omim = get_omim_table()
 df_omim = df_omim[df_omim["phenotype_mim_number"].notna()]
 
@@ -110,6 +111,7 @@ df_omim.set_index("OMIM_gene_id", inplace=True)
 
 
 
+print("Getting ClinGen haploinsufficient genes table")
 df_clingen_haploinsufficient_genes = get_clingen_haploinsufficient_genes_table()
 df_clingen_haploinsufficient_genes = df_clingen_haploinsufficient_genes.rename(columns={
     "HAPLOINSUFFICIENCY": "CLINGEN_haploinsufficient",
@@ -137,6 +139,7 @@ ONLINE REPORT          https://search.clinicalgenome.org/kb/gene-vali...
 CLASSIFICATION DATE                             2024-03-14T16:00:00.000Z
 GCEP                   Charcot-Marie-Tooth Disease Gene Curation Expe...
 """
+print("Getting ClinGen gene disease validity table")
 df_clingen = get_clingen_gene_disease_validity_table()
 print(f"Got {len(df_clingen):,d} rows from ClinGen, containing {len(df_clingen['GENE ID (HGNC)'].unique()):,d} unique genes")
 
@@ -184,6 +187,7 @@ df_clingen = df_clingen.groupby("CLINGEN_gene_id").agg({
 df_clingen.set_index("CLINGEN_gene_id", inplace=True)
 
 
+print("Getting constraint scores table")
 df_constraint_scores = get_constraint_scores()
 
 """Example:
@@ -242,6 +246,7 @@ phenotypes                    3C/Ritscher-Schinzel-like syndrome
 panel_name                             Chondrodysplasia punctata
 """
 
+print("Getting PanelApp tables")
 df_panel_app = get_panel_app_table()
 PANEL_APP_UK_LABEL = "PanelApp UK"
 PANEL_APP_AU_LABEL = "PanelApp Australia"
@@ -319,6 +324,7 @@ df_panel_app = pd.merge(df_panel_app_uk, df_panel_app_au, how="outer", left_inde
 print("\t", f"Merged PanelApp table contains {len(df_panel_app):,d} gene ids")
 
 
+print("Getting table of recessive genes from Fridman et al. 2025")
 transcript_id_to_gene_id = get_transcript_id_to_gene_id()
 
 fridman_path = "bw2_annotation_utils/data/AR_genes_from_Fridman_2025.tsv"
@@ -354,6 +360,7 @@ if os.path.exists(fridman_path):
     df_fridman.set_index("FRIDMAN_gene_id", inplace=True)
 
 
+print("Getting GWAS catalog rare disease records")
 df_gwas = get_gwas_catalog_rare_disease_records()
 
 """
@@ -405,6 +412,7 @@ df_gwas = df_gwas.groupby("GWAS_gene_id").agg({
 df_gwas.set_index("GWAS_gene_id", inplace=True)
 
 
+print("Getting GenCC table")
 df_gencc = get_gencc_table()
 
 """
@@ -440,6 +448,7 @@ df_gencc = df_gencc.groupby("GENCC_gene_id").agg({
 
 df_gencc.set_index("GENCC_gene_id", inplace=True)
 
+print("Getting Decipher table")
 df_decipher = get_decipher_gene_table()
 
 df_decipher.rename(columns={
@@ -455,6 +464,7 @@ df_decipher = df_decipher.groupby("DECIPHER_gene_id").agg({
 
 df_decipher.set_index("DECIPHER_gene_id", inplace=True)
 
+print("Getting ClinVar table")
 df_clinvar = get_clinvar_gene_disease_table()
 
 df_clinvar.rename(columns={
