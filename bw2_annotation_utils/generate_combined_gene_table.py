@@ -619,7 +619,7 @@ def summarize_inheritance(row):
 df_combined["inheritance"] = df_combined.apply(summarize_inheritance, axis=1)
 
 # move the gene_id, gene_symbol, and gene_aliases columns to the front
-initial_columns = ["gene_id", "gene_symbol", "gene_aliases", "hgnc_gene_id", "inheritance", "present_in", "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4"]
+initial_columns = ["gene_id", "gene_symbol", "gene_aliases",  "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4", "hgnc_gene_id", "inheritance", "present_in"]
 df_combined = df_combined[initial_columns + [c for c in df_combined.columns if c not in initial_columns]]
 #df_combined.sort_values(by=["present_in", "gene_id"], inplace=True)
 

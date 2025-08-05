@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 from dotenv import load_dotenv
+import time
 import sys
 load_dotenv()
 
@@ -35,6 +36,7 @@ Now, try generating this type of summary for the following phenotype description
 df = pd.read_table(args.combined_table)
 
 def summarize_phenotypes(row):
+
     # concatenate the phenotypes into a single string, by source
     phenotypes = []
     for label, phenotype_column in [
@@ -69,8 +71,7 @@ def summarize_phenotypes(row):
                 return ""
 
     prompt = prompt_prefix + ", ".join(phenotypes)
-    response = ask_gemini(prompt, model="2.5-flash", temperature=0, max_tokens=1000, system_prompt="")
-    print(response)
+    response = ask_gemini(prompt, model="2.5-flash", temperature=0, max_tokens=1000, system_prompt="", verbose=True)
 
     return response
 
@@ -80,8 +81,8 @@ df["LLM_phenotype_summary"] = df.apply(summarize_phenotypes, axis=1)
 
 # move the LLM_phenotype_summary column to be after the 'inheritance' column
 initial_columns = [
-    "gene_id", "gene_symbol", "gene_aliases", "inheritance", "LLM_phenotype_summary", "present_in",
-    "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4", "hgnc_gene_id", 
+    "gene_id", "gene_symbol", "gene_aliases",  "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4", 
+    "hgnc_gene_id", "inheritance", "LLM_phenotype_summary", "present_in"
 ]
 
 df = df[initial_columns + [c for c in df.columns if c not in initial_columns]]
