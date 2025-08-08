@@ -102,8 +102,8 @@ def get_omim_table():
     omim_df[["chrom", "interval"]] = omim_df["locus"].str.split(":", expand=True)
     omim_df[["start", "end"]] = omim_df["interval"].str.split("-", expand=True).astype("int32")
 
-    omim_df = omim_df[omim_df["locus_size"] < MAX_GENE_SIZE]
-    omim_df = omim_df[omim_df["start"] > 1]
+    #omim_df = omim_df[omim_df["locus_size"] < MAX_GENE_SIZE]
+    #omim_df = omim_df[omim_df["start"] > 1]
 
     omim_df["pLI"] = omim_df["pLI"].replace("", float('nan')).replace("NA", float('nan')).astype(float)
     omim_df["mis_z"] = omim_df["mis_z"].replace("", float('nan')).replace("NA", float('nan')).astype(float)

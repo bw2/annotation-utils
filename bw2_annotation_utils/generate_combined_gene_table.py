@@ -58,9 +58,9 @@ mis_z                                           -0.044129
 
 print("Getting OMIM table")
 df_omim = get_omim_table()
-df_omim = df_omim[df_omim["phenotype_mim_number"].notna()]
-
-print(f"Got {len(df_omim):,d} rows from OMIM, containing {len(df_omim['gene_id'].unique()):,d} unique genes")
+print(f"Got {len(df_omim):,d} rows from OMIM")
+df_omim = df_omim[df_omim["phenotype_mim_number"].notna() & (df_omim["phenotype_mim_number"] != "")]
+print(" "*8, f"Kept {len(df_omim):,d} rows from OMIM, containing {len(df_omim['gene_id'].unique()):,d} unique genes")
 df_omim = df_omim[[
     "gene_id",   # ENSG id
     "mim_number", 
@@ -90,7 +90,8 @@ df_omim = df_omim.rename(columns={
 
 
 before = len(df_omim)
-df_omim = df_omim[(df_omim["OMIM_gene_id"] != '') & ((df_omim["OMIM_phenotype_mim_number"] != '') | (df_omim["OMIM_phenotype_description"] != ''))]
+df_omim = df_omim[df_omim["OMIM_gene_id"].notna() & (df_omim["OMIM_phenotype_mim_number"].notna() | df_omim["OMIM_phenotype_description"].notna())]
+df_omim = df_omim[(df_omim["OMIM_gene_id"] != "") & ((df_omim["OMIM_phenotype_mim_number"] != "") | (df_omim["OMIM_phenotype_description"] != ""))]
 print("\t", f"Kept {len(df_omim):,d} out of {before:,d} ({(len(df_omim) / before):.1%}) rows which had both a gene and a phenotype")
 
 

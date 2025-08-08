@@ -31,7 +31,9 @@ def cache_data_table(get_table_func):
 
         # use the cached file if it's less than 1 week old
         if os.path.isfile(cache_file_path) and os.path.getmtime(cache_file_path) > time.time() - 7 * 24 * 60 * 60:
-            return pd.read_table(cache_file_path)
+            df = pd.read_table(cache_file_path)
+            print(f"Read {len(df):,d} rows from cache file {cache_file_path}")
+            return df
 
         # call the underlying function
         df = get_table_func(*args, **kwargs)
@@ -39,6 +41,7 @@ def cache_data_table(get_table_func):
         # save result to cache
         df.to_csv(cache_file_path, header=True, index=False, sep="\t")
 
+        print(f"Saved {len(df):,d} rows to cache file {cache_file_path}")
         return df
 
     return wrapper
