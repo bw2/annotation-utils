@@ -176,3 +176,17 @@ df = df[initial_columns + [c for c in df.columns if c not in initial_columns]]
 df.to_csv(args.output_path, sep="\t", index=False)
 
 print(f"Wrote {len(df):,d} rows to {args.output_path}")
+
+# print ClinGen stats
+for label, df_subset in (
+    ("Curated", df[df.clingen_curation.str.startswith("Curated") & df.clingen_curation.notna()]),
+    ("In Scope", df[df.clingen_curation == "In Scope"]),
+    ("Not in scope", df[df.clingen_curation.isna()]),
+):
+    df_subset = df_subset[df_subset.disease_category.notna() & (df_subset.disease_category.str.strip() != "")]
+
+    print("-" * 100)
+    print(f"{label}: {len(df_subset):,d} rows")
+    for category, count in df_subset.disease_category.value_counts().items():
+        print(f"{count:,d}\t{category}")
+    print()
