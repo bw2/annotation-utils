@@ -18,6 +18,7 @@ OUTPUT_COLUMNS = [
     'start',
     'end',
     'mim_number',
+    'phenotype_map_method',
     'phenotype_mim_number',
     'phenotype_inheritance',
     'gene_symbols',
@@ -154,6 +155,7 @@ def parse_genemap2_records(omim_line_fields):
                 raise ValueError("Unexpected value (%s) for phenotype_map_method: %s" % (
                     record_with_phenotype["phenotype_map_method"], phenotype_field))
 
+            phenotype_map_method = OMIM_PHENOTYPE_MAP_METHOD_CHOICES[int(record_with_phenotype["phenotype_map_method"])]
             yield record_with_phenotype
 
         if record_with_phenotype is None:
