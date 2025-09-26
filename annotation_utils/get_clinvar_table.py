@@ -1,6 +1,6 @@
 import hail as hl
 import pandas as pd
-from cache_utils import cache_data_table
+from annotation_utils.cache_utils import cache_data_table
 
 """
 ----------------------------------------
@@ -108,7 +108,7 @@ def get_clinvar_gene_disease_table():
 
     # Filter to transcripts that are MANE Select or MANE Plus Clinical
     # List downloaded from http://tark.ensembl.org/web/manelist/
-    df_mane = pd.read_csv("./bw2_annotation_utils/data/MANE_select_and_plus_ENSG_ids.csv")
+    df_mane = pd.read_csv("./annotation_utils/data/MANE_select_and_plus_ENSG_ids.csv")
     mane_transcripts = [transcript_id.split(".")[0] for transcript_id in df_mane["ENST_ids"]]
 
 

@@ -2,8 +2,8 @@ import pandas as pd
 import requests
 from io import StringIO
 
-from bw2_annotation_utils.cache_utils import cache_data_table
-from bw2_annotation_utils.get_hgnc_table import get_hgnc_to_ensg_id_map
+from annotation_utils.cache_utils import cache_data_table
+from annotation_utils.get_hgnc_table import get_hgnc_to_ensg_id_map
 
 def _get_clingen_table(url):
     """Download one of the ClinGen .csv tables and return it as a pandas DataFrame

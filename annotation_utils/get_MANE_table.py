@@ -1,4 +1,4 @@
-from cache_utils import cache_data_table
+from annotation_utils.cache_utils import cache_data_table
 import pandas as pd
 
 MANE_SUMMARY_TABLE_URL = "https://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/release_1.4/MANE.GRCh38.v1.4.summary.txt.gz"

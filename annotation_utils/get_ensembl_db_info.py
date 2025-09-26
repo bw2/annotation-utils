@@ -1,4 +1,4 @@
-#from bw2_annotation_utils.cache_utils import cache_json
+#from annotation_utils.cache_utils import cache_json
 import collections
 import pymysql
 
@@ -10,7 +10,7 @@ import pymysql
 
 
 
-CURRENT_ENSEMBL_DATABASE = "homo_sapiens_core_114_38"
+CURRENT_ENSEMBL_DATABASE = "homo_sapiens_core_115_38"
 ENSEMBL_HOST_EAST = "useastdb.ensembl.org"
 ENSEMBL_HOST_MAIN = "ensembldb.ensembl.org"
 
@@ -29,6 +29,58 @@ homo_sapiens_rnaseq_103_38
 homo_sapiens_variation_102_38
 homo_sapiens_variation_103_38
 """
+
+
+def get_gene_metadata(
+        database=CURRENT_ENSEMBL_DATABASE,
+        only_protein_coding=False):
+    """Retrieves a dictionary containing gene_id => a dictionary of information about that gene.
+
+    Args:
+        database (str): The Ensembl database name (eg. "homo_sapiens_core_107_38")
+        only_protein_coding (bool): If True, only return protein-coding genes
+
+    Return:
+        dict: mapping ENSG id string to a dictionary of metadata about that gene
+    """
+
+    gene_id_to_metadata = {}
+    host = ENSEMBL_HOST_EAST if database == CURRENT_ENSEMBL_DATABASE else ENSEMBL_HOST_MAIN
+    with pymysql.connect(host=host, user="anonymous", database=database) as conn:
+        with conn.cursor() as cursor:
+            columns = [
+                # Gene fields
+                #"gene.seq_region_id",
+                "gene.seq_region_start",
+                "gene.seq_region_end",
+                "gene.stable_id",
+                "gene.biotype",
+                "gene.created_date",
+                "gene.modified_date",
+
+                # Seq Region
+                "seq_region.name",
+            ]
+
+            columns_str = ", ".join(columns)
+            query_string = f"SELECT {columns_str} FROM gene LEFT JOIN seq_region ON gene.seq_region_id = seq_region.seq_region_id"
+            if only_protein_coding:
+                query_string += " WHERE gene.biotype = 'protein_coding'"
+
+            cursor.execute(query_string)
+
+            for row in cursor:
+                gene_info = dict(zip(columns, row))
+                gene_id = gene_info['gene.stable_id']
+                gene_info["chrom"] = gene_info.pop("seq_region.name")
+                gene_info["start"] = gene_info.pop("gene.seq_region_start")
+                gene_info["end"] = gene_info.pop("gene.seq_region_end")
+
+                gene_id_to_metadata[gene_id] = gene_info
+
+
+    return gene_id_to_metadata
+
 
 
 

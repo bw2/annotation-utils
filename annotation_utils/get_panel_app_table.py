@@ -1,7 +1,7 @@
 import pandas as pd
 import requests
 
-from bw2_annotation_utils.cache_utils import cache_data_table
+from annotation_utils.cache_utils import cache_data_table
 
 URL_UK_PANEL_APP = "https://panelapp.genomicsengland.co.uk/api/v1/genes/"
 URL_AUSTRALIA_PANEL_APP = "https://panelapp-aus.org/api/v1/genes/"

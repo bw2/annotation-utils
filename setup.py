@@ -27,7 +27,7 @@ def test_suite():
 
 
 setup(
-    name='bw2-annotation-utils',
+    name='annotation-utils',
     version="0.1.4",
     description="Misc. utilities for downloading and working with various gene annotations, the HPO ontology, etc",
     install_requires=requirements,
@@ -36,12 +36,12 @@ setup(
     },
     entry_points = {
         'console_scripts': [
-            'hpo_lookup = bw2_annotation_utils.hpo_lookup:main',
+            'hpo_lookup = annotation_utils.hpo_lookup:main',
         ],
     },
     long_description_content_type="text/markdown",
     long_description=long_description,
-    packages=["bw2_annotation_utils"],
+    packages=["annotation_utils"],
     include_package_data=True,
     python_requires=">=3.7",
     license="MIT",

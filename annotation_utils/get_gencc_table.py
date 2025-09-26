@@ -1,6 +1,6 @@
-from cache_utils import cache_data_table
 import pandas as pd
-from bw2_annotation_utils.get_hgnc_table import get_hgnc_table
+from annotation_utils.cache_utils import cache_data_table
+from annotation_utils.get_hgnc_table import get_hgnc_table
 
 """Retrieve GenCC submissions
 

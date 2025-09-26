@@ -13,7 +13,7 @@ import tqdm
 
 from pprint import pprint
 
-from bw2_annotation_utils.spliceai_scores import get_spliceai_scores_from_api
+from annotation_utils.spliceai_scores import get_spliceai_scores_from_api
 
 LOF_CONSEQUENCES = {
 	'splice_acceptor_variant',

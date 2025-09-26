@@ -1,4 +1,4 @@
-from bw2_annotation_utils.cache_utils import cache_json
+from annotation_utils.cache_utils import cache_json
 import lxml.etree
 import os
 import requests

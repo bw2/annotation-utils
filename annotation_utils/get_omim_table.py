@@ -9,7 +9,7 @@ import urllib.request
 from tqdm import tqdm
 import re
 
-from bw2_annotation_utils.cache_utils import cache_data_table
+from annotation_utils.cache_utils import cache_data_table
 
 load_dotenv()
 

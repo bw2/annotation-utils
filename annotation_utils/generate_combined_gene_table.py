@@ -1,19 +1,17 @@
 from datetime import datetime
 import os
 import pandas as pd
-import re
 
-from bw2_annotation_utils.get_panel_app_table import get_panel_app_table
-from bw2_annotation_utils.get_omim_table import get_omim_table
-from bw2_annotation_utils.get_clingen_table import get_clingen_gene_disease_validity_table, get_clingen_haploinsufficient_genes_table
-from bw2_annotation_utils.get_hgnc_table import get_hgnc_table, get_hgnc_to_ensg_id_map, get_ensg_id_to_hgnc_id_map
-from bw2_annotation_utils.get_panel_app_table import get_panel_app_table
-from bw2_annotation_utils.get_ensembl_db_info import get_transcript_id_to_gene_id
-from bw2_annotation_utils.get_gwas_catalog import get_gwas_catalog_rare_disease_records
-from bw2_annotation_utils.get_gencc_table import get_gencc_table
-from bw2_annotation_utils.get_decipher_genes import get_decipher_gene_table
-from bw2_annotation_utils.get_clinvar_table import get_clinvar_gene_disease_table
-from bw2_annotation_utils.get_constraint_scores import get_constraint_scores
+from annotation_utils.get_omim_table import get_omim_table
+from annotation_utils.get_clingen_table import get_clingen_gene_disease_validity_table, get_clingen_haploinsufficient_genes_table
+from annotation_utils.get_hgnc_table import get_hgnc_table, get_hgnc_to_ensg_id_map, get_ensg_id_to_hgnc_id_map
+from annotation_utils.get_panel_app_table import get_panel_app_table
+from annotation_utils.get_ensembl_db_info import get_transcript_id_to_gene_id, get_gene_metadata
+from annotation_utils.get_gwas_catalog import get_gwas_catalog_rare_disease_records
+from annotation_utils.get_gencc_table import get_gencc_table
+from annotation_utils.get_decipher_genes import get_decipher_gene_table
+from annotation_utils.get_clinvar_table import get_clinvar_gene_disease_table
+from annotation_utils.get_constraint_scores import get_constraint_scores
 
 include_GWAS = True
 include_Fridman = True
@@ -193,7 +191,7 @@ df_constraint_scores = get_constraint_scores()
 
 """Example:
 
-wm8c1-2cf:~/code/annotation-utils $ python3 bw2_annotation_utils/get_constraint_scores.py
+wm8c1-2cf:~/code/annotation-utils $ python3 annotation_utils/get_constraint_scores.py
                        pLI_v2    pLI_v4  lof_oe_v4  lof_oe_ci_lower_v4  lof_oe_ci_upper_v4  mis_oe_v4  mis_oe_ci_lower_v4  mis_oe_ci_upper_v4
 gene_id
 ENSG00000000003  6.607900e-02       NaN        NaN                 NaN                 NaN        NaN                 NaN                 NaN
@@ -328,7 +326,7 @@ print("\t", f"Merged PanelApp table contains {len(df_panel_app):,d} gene ids")
 print("Getting table of recessive genes from Fridman et al. 2025")
 transcript_id_to_gene_id = get_transcript_id_to_gene_id()
 
-fridman_path = "bw2_annotation_utils/data/AR_genes_from_Fridman_2025.tsv"
+fridman_path = "annotation_utils/data/AR_genes_from_Fridman_2025.tsv"
 if os.path.exists(fridman_path):
     df_fridman = pd.read_table(fridman_path)
     df_fridman["FRIDMAN_gene_id"] = df_fridman["Transcripts"].apply(
@@ -537,6 +535,17 @@ if include_Fridman:
     assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids after merging with Fridman"
     print(f"Added {len(df_combined) - len(before):,d} genes from Fridman et al. 2025 list of recessive genes" + (f" - examples: {', '.join(list(set(df_combined.index) - set(before))[:5])}" if print_example_genes else ""))
 
+# add gene chrom, start, end
+df_gene_chrom_start_end = pd.DataFrame(get_gene_metadata().values())
+df_gene_chrom_start_end = df_gene_chrom_start_end[["gene.stable_id", "chrom", "start", "end"]]
+df_gene_chrom_start_end.set_index("gene.stable_id", inplace=True)
+missing_gene_ids = set(df_combined.index) - set(df_gene_chrom_start_end.index)
+if len(missing_gene_ids) > 0:
+    print(f"WARNING: chrom/start/end not available for {len(missing_gene_ids):,d} genes: {', '.join(list(missing_gene_ids)[:20])}" + (", ..." if len(missing_gene_ids) > 20 else ""))
+df_combined = pd.merge(df_combined, df_gene_chrom_start_end, how="left", left_index=True, right_index=True)
+df_combined["start"] = df_combined["start"].fillna(0).astype(int)
+df_combined["end"] = df_combined["end"].fillna(0).astype(int)
+
 # add constraint scores
 before = list(df_combined.index)
 df_combined = pd.merge(df_combined, df_constraint_scores, how="left", left_index=True, right_index=True)
@@ -626,11 +635,11 @@ df_combined = df_combined[initial_columns + [c for c in df_combined.columns if c
 
 #timestamp = datetime.now().strftime("%Y_%m_%d")
 #output_path = f"combined_mendelian_gene_disease_table.{len(df_combined)}_genes.{timestamp}.tsv"
-output_path = f"combined_mendelian_gene_disease_table.tsv"
+output_path = f"combined_mendelian_gene_disease_table.tsv.gz"
 df_combined.to_csv(output_path, sep="\t", index=False)
 print(f"Wrote {len(df_combined):,d} genes to {output_path}")
 
-output_path = f"combined_mendelian_gene_disease_table.only_in_clinvar.tsv"
+output_path = f"combined_mendelian_gene_disease_table.only_in_clinvar.tsv.gz"
 df_clinvar_only = df_combined[(df_combined["present_in"] == "1: ClinVar") | (df_combined["present_in"] == "2: ClinVar, Fridman")]
 df_clinvar_only.to_csv(output_path, sep="\t", index=False)
 print(f"Wrote {len(df_clinvar_only):,d} genes to {output_path}")

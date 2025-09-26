@@ -4,8 +4,8 @@ import pandas as pd
 import requests
 import os
 
-from bw2_annotation_utils.cache_utils import cache_data_table
-from bw2_annotation_utils.get_mondo_ontology import get_mondo_ontology
+from annotation_utils.cache_utils import cache_data_table
+from annotation_utils.get_mondo_ontology import get_mondo_ontology
 
 GWAS_CATALOG_URL = "https://www.ebi.ac.uk/gwas/api/search/downloads/alternative"
 

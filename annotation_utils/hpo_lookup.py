@@ -1,5 +1,5 @@
 import argparse
-from bw2_annotation_utils.cache_utils import cache_json
+from annotation_utils.cache_utils import cache_json
 import os
 import requests
 from tqdm import tqdm
