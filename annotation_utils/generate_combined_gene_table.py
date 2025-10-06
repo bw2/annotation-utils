@@ -1,3 +1,4 @@
+import argparse
 from datetime import datetime
 import os
 import pandas as pd
@@ -13,9 +14,19 @@ from annotation_utils.get_decipher_genes import get_decipher_gene_table
 from annotation_utils.get_clinvar_table import get_clinvar_gene_disease_table
 from annotation_utils.get_constraint_scores import get_constraint_scores
 
-include_GWAS = True
-include_Fridman = True
-print_example_genes = False
+parser = argparse.ArgumentParser()
+parser.add_argument("--skip-gwas", action="store_true", help="Don't add columns related to GWAS catalog rare disease records")
+parser.add_argument("--skip-fridman", action="store_true", help="Don't add columns related to the Fridman et al. 2025 list of recessive genes")
+parser.add_argument("--print-example-genes", action="store_true", help="Print example genes")
+parser.add_argument("--force", action="store_true", help="Force re-download of all data, even if cached")
+args = parser.parse_args()
+
+if args.force:
+    os.environ["FORCE_DOWNLOAD"] = "1"
+
+include_GWAS = not args.skip_gwas
+include_Fridman = not args.skip_fridman
+print_example_genes = args.print_example_genes
 
 separtor = "; "
 

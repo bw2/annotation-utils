@@ -1,5 +1,6 @@
 import pandas as pd
 import requests
+import time
 
 from annotation_utils.cache_utils import cache_data_table
 
@@ -19,6 +20,8 @@ def get_panel_app_table():
         while data.get('next'):  # page through the results
             page_i += 1
             url = data['next']
+
+            time.sleep(2)  # sleep for 2 seconds to avoid being rate limited
 
             print(f"Retrieving page {page_i} of {url}")
             r = requests.get(url)

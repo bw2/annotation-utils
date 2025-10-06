@@ -8,6 +8,7 @@ import time
 
 CACHE_DIR = os.path.expanduser("~/.annotations")
 
+FORCE_DOWNLOAD = os.getenv("FORCE_DOWNLOAD") == "1"
 
 def cache_data_table(get_table_func):
     """Decorator that caches the pandas DataFrame returned by the decorated function.
@@ -30,7 +31,11 @@ def cache_data_table(get_table_func):
         cache_file_path = os.path.join(CACHE_DIR, filename)
 
         # use the cached file if it's less than 1 week old
-        if os.path.isfile(cache_file_path) and os.path.getmtime(cache_file_path) > time.time() - 7 * 24 * 60 * 60:
+        if (
+            not FORCE_DOWNLOAD and 
+            os.path.isfile(cache_file_path) and 
+            os.path.getmtime(cache_file_path) > time.time() - 7 * 24 * 60 * 60
+        ):
             df = pd.read_table(cache_file_path)
             print(f"Read {len(df):,d} rows from cache file {cache_file_path}")
             return df
@@ -56,6 +61,7 @@ def cache_json(get_json_func):
     """
     
     def wrapper(*args, **kwargs):
+
         # create cache dir
         if not os.path.isdir(CACHE_DIR):
             os.mkdir(CACHE_DIR)
@@ -68,7 +74,11 @@ def cache_json(get_json_func):
         cache_file_path = os.path.join(CACHE_DIR, filename)
 
         # use the cached file if it's less than 1 week old
-        if os.path.isfile(cache_file_path) and os.path.getmtime(cache_file_path) > time.time() - 7 * 24 * 60 * 60:
+        if (
+            not FORCE_DOWNLOAD and 
+            os.path.isfile(cache_file_path) and 
+            os.path.getmtime(cache_file_path) > time.time() - 7 * 24 * 60 * 60
+        ):
             return json.load(gzip.open(cache_file_path, "rt"))
 
         # call the underlying function
