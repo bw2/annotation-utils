@@ -1,0 +1,3 @@
+set -ex
+python3 annotation_utils/generate_combined_gene_table.py --skip-gwas
+python3 annotation_utils/add_phenotype_summary_using_AI.py combined_mendelian_gene_disease_table.tsv.gz

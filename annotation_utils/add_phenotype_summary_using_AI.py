@@ -91,7 +91,7 @@ def summarize_phenotypes(row, prompt_prefix=prompt_prefix1, blank_if_no_phenotyp
         if blank_if_no_phenotypes:
             return ""
         
-        if not pd.isna(row["GWAS_mondo_name"]):
+        if "GWAS_mondo_name" in row and not pd.isna(row["GWAS_mondo_name"]):
             return f"GWAS: " + str(row["GWAS_mondo_name"])
         else:
             constraint_type = []
@@ -100,9 +100,9 @@ def summarize_phenotypes(row, prompt_prefix=prompt_prefix1, blank_if_no_phenotyp
             if row["pLI_v4"] >= 0.9:
                 constraint_type.append("pLI_v4")
             if row["lof_oe_ci_upper_v4"] <= 0.2:
-                constraint_type.append("lof_oe_v4")
+                constraint_type.append("LOEUF")
             if row["mis_oe_ci_upper_v4"] <= 0.2:
-                constraint_type.append("mis_oe_v4")
+                constraint_type.append("MOEUF")
 
             if constraint_type:
                 return f"Constrained: {', '.join(constraint_type)}"
@@ -168,7 +168,7 @@ df["clingen_curation"] = df["gene_symbol"].str.upper().map(gene_name_to_clingen_
 # move the LLM_phenotype_summary column to be after the 'inheritance' column
 initial_columns = [
     "gene_id", "gene_symbol", "gene_aliases",  "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4",
-    "hgnc_gene_id", "inheritance",  "disease_category", "clingen_curation", "LLM_phenotype_summary", "present_in",
+    "hgnc_gene_id", "inheritance",  "disease_category", "clingen_curation", "LLM_phenotype_summary", "sources",
     "chrom", "start", "end",
 ]
 

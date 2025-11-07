@@ -338,7 +338,7 @@ print("Getting table of recessive genes from Fridman et al. 2025")
 transcript_id_to_gene_id = get_transcript_id_to_gene_id()
 
 fridman_path = "annotation_utils/data/AR_genes_from_Fridman_2025.tsv"
-if os.path.exists(fridman_path):
+if include_Fridman and os.path.exists(fridman_path):
     df_fridman = pd.read_table(fridman_path)
     df_fridman["FRIDMAN_gene_id"] = df_fridman["Transcripts"].apply(
         lambda transcript_list: ", ".join(transcript_id_to_gene_id[t] for t in transcript_list.split(",") if t in transcript_id_to_gene_id)
@@ -367,59 +367,64 @@ if os.path.exists(fridman_path):
         "FRIDMAN_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
     }).reset_index()
 
+    df_fridman["InFridman"] = True
+
     df_fridman.set_index("FRIDMAN_gene_id", inplace=True)
 
 
-print("Getting GWAS catalog rare disease records")
-df_gwas = get_gwas_catalog_rare_disease_records()
+df_gwas = None
+if include_GWAS:
+    print("Getting GWAS catalog rare disease records")
+    df_gwas = get_gwas_catalog_rare_disease_records()
 
-"""
-MONDO_ID           MONDO:0016158
-CHR_ID                         2
-CHR_POS                241837710
-SNPS                  rs34071003
-P-VALUE                 0.000004
-OR or BETA                 1.328
-95% CI (TEXT)    [1.1789-1.4980]
-GENE_ID          ENSG00000204099
-GENE_TYPE               UPSTREAM
-GENE_DISTANCE            20297.0
-"""
+    """
+    MONDO_ID           MONDO:0016158
+    CHR_ID                         2
+    CHR_POS                241837710
+    SNPS                  rs34071003
+    P-VALUE                 0.000004
+    OR or BETA                 1.328
+    95% CI (TEXT)    [1.1789-1.4980]
+    GENE_ID          ENSG00000204099
+    GENE_TYPE               UPSTREAM
+    GENE_DISTANCE            20297.0
+    """
 
-df_gwas = df_gwas[~df_gwas["MONDO_CATEGORY"].isin({"cancer or benign tumor", "infectious disease"})]
+    df_gwas = df_gwas[~df_gwas["MONDO_CATEGORY"].isin({"cancer or benign tumor", "infectious disease"})]
 
-df_gwas.rename(columns={
-    "MONDO_ID": "GWAS_mondo_id",
-    "MONDO_NAME": "GWAS_mondo_name",
-    "MONDO_CATEGORY": "GWAS_mondo_category",
-    "CHR_ID": "GWAS_chr_id",
-    "CHR_POS": "GWAS_chr_pos",
-    "SNPS": "GWAS_snps",
-    "P-VALUE": "GWAS_p_value",
-    "OR or BETA": "GWAS_odds_ratio_or_beta",
-    "95% CI (TEXT)": "GWAS_95_ci_text",
-    "GENE_ID": "GWAS_gene_id",
-    "GENE_TYPE": "GWAS_gene_type",
-    "GENE_DISTANCE": "GWAS_gene_distance",
-}, inplace=True)
+    df_gwas.rename(columns={
+        "MONDO_ID": "GWAS_mondo_id",
+        "MONDO_NAME": "GWAS_mondo_name",
+        "MONDO_CATEGORY": "GWAS_mondo_category",
+        "CHR_ID": "GWAS_chr_id",
+        "CHR_POS": "GWAS_chr_pos",
+        "SNPS": "GWAS_snps",
+        "P-VALUE": "GWAS_p_value",
+        "OR or BETA": "GWAS_odds_ratio_or_beta",
+        "95% CI (TEXT)": "GWAS_95_ci_text",
+        "GENE_ID": "GWAS_gene_id",
+        "GENE_TYPE": "GWAS_gene_type",
+        "GENE_DISTANCE": "GWAS_gene_distance",
+    }, inplace=True)
 
-df_gwas = df_gwas[df_gwas["GWAS_gene_id"].notna() & (df_gwas["GWAS_gene_id"] != "")]
+    df_gwas = df_gwas[df_gwas["GWAS_gene_id"].notna() & (df_gwas["GWAS_gene_id"] != "")]
 
-df_gwas = df_gwas.groupby("GWAS_gene_id").agg({
-    "GWAS_mondo_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "GWAS_mondo_name": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "GWAS_mondo_category": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "GWAS_gene_type": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "GWAS_gene_distance": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "GWAS_chr_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "GWAS_chr_pos": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "GWAS_snps": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "GWAS_p_value": lambda x: min(float(v) for v in x if v != ""), 
-    "GWAS_odds_ratio_or_beta": lambda x: min(float(v) for v in x if v != ""), 
-    "GWAS_95_ci_text": lambda x: separtor.join(normalize_nulls(v) for v in x),
-}).reset_index()
+    df_gwas = df_gwas.groupby("GWAS_gene_id").agg({
+        "GWAS_mondo_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
+        "GWAS_mondo_name": lambda x: separtor.join(normalize_nulls(v) for v in x),
+        "GWAS_mondo_category": lambda x: separtor.join(normalize_nulls(v) for v in x),
+        "GWAS_gene_type": lambda x: separtor.join(normalize_nulls(v) for v in x),
+        "GWAS_gene_distance": lambda x: separtor.join(normalize_nulls(v) for v in x),
+        "GWAS_chr_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
+        "GWAS_chr_pos": lambda x: separtor.join(normalize_nulls(v) for v in x),
+        "GWAS_snps": lambda x: separtor.join(normalize_nulls(v) for v in x),
+        "GWAS_p_value": lambda x: min(float(v) for v in x if v != ""),
+        "GWAS_odds_ratio_or_beta": lambda x: min(float(v) for v in x if v != ""),
+        "GWAS_95_ci_text": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    }).reset_index()
 
-df_gwas.set_index("GWAS_gene_id", inplace=True)
+    df_gwas["InGWAS"] = True
+    df_gwas.set_index("GWAS_gene_id", inplace=True)
 
 
 print("Getting GenCC table")
@@ -504,8 +509,6 @@ df_clingen["InClinGen"] = True
 df_gencc["InGenCC"] = True
 df_decipher["InDecipher"] = True
 df_clinvar["InClinVar"] = True
-df_gwas["InGWAS"] = True
-df_fridman["InFridman"] = True
 
 
 before = list(df_omim.index)
@@ -564,13 +567,18 @@ assert df_combined.index.is_unique, "The merged dataframe has duplicate gene ids
 rows_with_constraint_scores = sum(df_combined["pLI_v2"].notna() | df_combined["pLI_v4"].notna() | df_combined["lof_oe_ci_upper_v4"].notna() | df_combined["mis_oe_ci_upper_v4"].notna())
 print(f"Added constraint scores to {rows_with_constraint_scores:,d} out of {len(df_combined):,d} ({(rows_with_constraint_scores / len(df_combined)):.1%}) genes")
 
+pLI_v2_THRESHOLD = 0.9
+pLI_v4_THRESHOLD = 0.9
+LOEUF_CONSTRAINT_THRESHOLD = 0.2
+MOEUF_CONSTRAINT_THRESHOLD = 0.2
+
 # add highly constrained genes that are not in the other sources:
 df_highly_constrained_genes = df_constraint_scores[
     ~df_constraint_scores.index.isin(df_combined.index) & (
-        (df_constraint_scores["pLI_v2"] >= 0.9) |
-        (df_constraint_scores["pLI_v4"] >= 0.9) |
-        (df_constraint_scores["lof_oe_ci_upper_v4"] <= 0.2) |
-        (df_constraint_scores["mis_oe_ci_upper_v4"] <= 0.2)
+        (df_constraint_scores["pLI_v2"] >= pLI_v2_THRESHOLD) |
+        (df_constraint_scores["pLI_v4"] >= pLI_v4_THRESHOLD) |
+        (df_constraint_scores["lof_oe_ci_upper_v4"] <= LOEUF_CONSTRAINT_THRESHOLD) |
+        (df_constraint_scores["mis_oe_ci_upper_v4"] <= MOEUF_CONSTRAINT_THRESHOLD)
     )
 ]
 
@@ -591,29 +599,38 @@ df_combined["hgnc_gene_id"] = df_combined["gene_id"].map(ENSG_to_HGNC_map)
 #    print(f"WARNING: {df_combined['hgnc_gene_id'].isna().sum():,d} genes had no HGNC id")
 #    print(df_combined[df_combined["hgnc_gene_id"].isna()])
 
-def compute_present_in_string(row):
-    present_in = []
+def compute_sources_string(row):
+    sources = []
     if row["InOMIM"] == True:
-        present_in.append("OMIM")
+        sources.append("OMIM")
     if row["InClinGen"] == True:
-        present_in.append("ClinGen")
+        sources.append("ClinGen")
     if row["InGenCC"] == True:
-        present_in.append("GenCC")
+        sources.append("GenCC")
     if row["InPanelAppUK"] == True:
-        present_in.append("PanelAppUK")
+        sources.append("PanelAppUK")
     if row["InPanelAppAU"] == True:
-        present_in.append("PanelAppAU")
+        sources.append("PanelAppAU")
     if row["InDecipher"] == True:
-        present_in.append("Decipher")
+        sources.append("Decipher")
     if row["InClinVar"] == True:
-        present_in.append("ClinVar")
+        sources.append("ClinVar")
     if include_GWAS and row["InGWAS"] == True:
-        present_in.append("GWAS")
+        sources.append("GWAS")
     if include_Fridman and row["InFridman"] == True:
-        present_in.append("Fridman")
-    return f"{len(present_in)}: " + ", ".join(present_in)
+        sources.append("Fridman")
+    if row["pLI_v2"] >= pLI_v2_THRESHOLD:
+        sources.append("pLI_v2:" + str(round(row["pLI_v2"], 2)))
+    if row["pLI_v4"] >= pLI_v4_THRESHOLD:
+        sources.append("pLI_v4:" + str(round(row["pLI_v4"], 2)))
+    if row["lof_oe_ci_upper_v4"] <= LOEUF_CONSTRAINT_THRESHOLD:
+        sources.append("LOEUF:" + str(round(row["lof_oe_ci_upper_v4"], 2)))
+    if row["mis_oe_ci_upper_v4"] <= MOEUF_CONSTRAINT_THRESHOLD:
+        sources.append("MOEUF:" + str(round(row["mis_oe_ci_upper_v4"], 2)))
 
-df_combined["present_in"] = df_combined.apply(compute_present_in_string, axis=1)
+    return f"{len(sources)}: " + ", ".join(sources)
+
+df_combined["sources"] = df_combined.apply(compute_sources_string, axis=1)
 df_combined.drop(columns=["InOMIM", "InClinGen", "InGenCC", "InPanelAppAU", "InPanelAppUK", "InDecipher", "InClinVar"], inplace=True)
 
 if include_GWAS:
@@ -640,9 +657,9 @@ def summarize_inheritance(row):
 df_combined["inheritance"] = df_combined.apply(summarize_inheritance, axis=1)
 
 # move the gene_id, gene_symbol, and gene_aliases columns to the front
-initial_columns = ["gene_id", "gene_symbol", "gene_aliases",  "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4", "hgnc_gene_id", "inheritance", "present_in"]
+initial_columns = ["gene_id", "gene_symbol", "gene_aliases",  "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4", "hgnc_gene_id", "inheritance", "sources"]
 df_combined = df_combined[initial_columns + [c for c in df_combined.columns if c not in initial_columns]]
-#df_combined.sort_values(by=["present_in", "gene_id"], inplace=True)
+#df_combined.sort_values(by=["sources", "gene_id"], inplace=True)
 
 #timestamp = datetime.now().strftime("%Y_%m_%d")
 #output_path = f"combined_mendelian_gene_disease_table.{len(df_combined)}_genes.{timestamp}.tsv"
@@ -651,7 +668,7 @@ df_combined.to_csv(output_path, sep="\t", index=False)
 print(f"Wrote {len(df_combined):,d} genes to {output_path}")
 
 output_path = f"combined_mendelian_gene_disease_table.only_in_clinvar.tsv.gz"
-df_clinvar_only = df_combined[(df_combined["present_in"] == "1: ClinVar") | (df_combined["present_in"] == "2: ClinVar, Fridman")]
+df_clinvar_only = df_combined[(df_combined["sources"] == "1: ClinVar") | (df_combined["sources"] == "2: ClinVar, Fridman")]
 df_clinvar_only.to_csv(output_path, sep="\t", index=False)
 print(f"Wrote {len(df_clinvar_only):,d} genes to {output_path}")
 
