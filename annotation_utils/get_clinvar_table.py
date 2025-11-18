@@ -159,9 +159,24 @@ def get_clinvar_gene_disease_table():
 
     return df
 
-def export_clinvar_vcf():
+
+def simplify_clinical_significance_expr(clinsig_expr):
+    return (
+        hl.case()
+          .when(clinsig_expr.contains("Pathogenic"), "Pathogenic")
+          .when(clinsig_expr.contains("Likely pathogenic"), "Likely pathogenic")
+          .when(clinsig_expr.contains("Benign"), "Benign")
+          .when(clinsig_expr.contains("Likely benign"), "Likely benign")
+          .when(clinsig_expr.contains("Uncertain significance"), "Uncertain significance")
+          .default(clinsig_expr)
+    )
+
+def export_clinvar_vcf(only_pathogenic=True, include_phenotypes=True):
     """Generate a VCF from the latest clinvar hail table in the gnomAD bucket"""
+    hl.init(driver_memory="highmem", idempotent=True)
     ht = hl.read_table("gs://gnomad-v4-data-pipeline/output/clinvar/clinvar_grch38_annotated_2.ht")
+    ht = ht.key_by(ht.locus, ht.alleles)
+
     clinvar_release_date = ht.clinvar_release_date.collect()
     clinvar_release_date = clinvar_release_date[0].replace("-", "_")
 
@@ -169,33 +184,46 @@ def export_clinvar_vcf():
     # check if clinical_significance string (when converted to lower case) contains "pathogenic" but not "pathogenicity"
     # this excludes 'Conflicting classifications of pathogenicity' as well as 'Uncertain significance'
     # but keeps 'Pathogenic', 'Likely pathogenic', and the many other combinations of these with other labels
-    ht = ht.filter(hl.str(ht.clinical_significance).lower().contains("pathogenic") & ~hl.str(ht.clinical_significance).lower().contains("pathogenicity"), keep=True)
+    if only_pathogenic:
+        ht = ht.filter(hl.str(ht.clinical_significance).lower().contains("pathogenic") & ~hl.str(ht.clinical_significance).lower().contains("pathogenicity"), keep=True)
+        ht = ht.annotate(clinical_significance = simplify_clinical_significance_expr(ht.clinical_significance))
 
-    ht = ht.annotate(phenotypes=hl.array(hl.sorted(hl.set(ht.submissions.map(lambda x: hl.str(", ").join(x.conditions.map(lambda y: y.name)))))))
-    ht = ht.annotate(phenotypes = hl.str(",").join(ht.phenotypes))
-    ht = ht.annotate(major_consequences = hl.str(",").join(hl.array(hl.sorted(hl.set(ht.transcript_consequences.map(lambda x: x.major_consequence))))))
+    #ht = ht.annotate(major_consequences = hl.str(",").join(hl.array(hl.sorted(hl.set(ht.transcript_consequences.map(lambda x: x.major_consequence))))))
+    if include_phenotypes:
+        ht = ht.annotate(phenotypes = ht.submissions
+            .flatmap(lambda x: x.conditions.map(lambda y: y.name))
+            .filter(lambda p: (p.lower() != "not provided") & (p.lower() != "not specified"))
+        )
+        ht = ht.annotate(phenotypes = hl.str(", ").join(hl.sorted(hl.set(ht.phenotypes))))
 
-    ht = ht.drop("gnomad", "transcript_consequences", "submissions")
+    
     ht = ht.transmute(info=hl.struct(
-        REVIEW=ht.review_status,
-        CLINSIG=ht.clinical_significance,
-        GOLD_STARS=ht.gold_stars,
-        LAST_EVALUATED=ht.last_evaluated,
-        IN_GNOMAD=ht.in_gnomad,
-        CONSEQUENCES=ht.major_consequences,
-        PHENOTYPES=ht.phenotypes,
-        CLINVARID=ht.clinvar_variation_id,
+        clinsig=ht.clinical_significance,  
+        stars=ht.gold_stars,
+        clinvarid=ht.clinvar_variation_id,
+        #consequences=ht.major_consequences,
+        #review_status=ht.review_status,  # this is equivalent to stars:  practice guideline (4 stars), reviewed by expert panel (3 stars), criteria provided, multiple submitters (2 stars), criteria provided, single submitter (1 star), no assertion criteria provided (0 stars)
+        #last_evaluated=ht.last_evaluated,
+        #in_gnomad=ht.in_gnomad,
     ))
+    
+    if include_phenotypes:
+        ht = ht.transmute(info=ht.info.annotate(phenotypes=ht.phenotypes))
 
-    ht = ht.key_by(ht.locus, ht.alleles)
+    ht = ht.select('info')
+    ht = ht.checkpoint(f"gs://bw2-delete-after-5-days/clinvar_{clinvar_release_date}_checkpoint.ht", overwrite=True)
+    local_filename = f"clinvar_{clinvar_release_date}.with_info.vcf.bgz"
+    temp_bucket_path = f"gs://bw2-delete-after-5-days/{local_filename}"
 
-
-    temp_bucket_path = f"gs://bw2-delete-after-5-days/clinvar_{clinvar_release_date}.vcf.bgz"
     hl.export_vcf(ht, temp_bucket_path)
-    hfs.copy(temp_bucket_path, f"./clinvar_{clinvar_release_date}.vcf.bgz")
-    hfs.delete(temp_bucket_path)
+    hfs.copy(temp_bucket_path, f"./{local_filename}")
+    hfs.remove(temp_bucket_path)
+
+    return local_filename
+
 
 if __name__ == "__main__":
     #df = get_clinvar_gene_disease_table()
     #print(df)
-    export_clinvar_vcf()
+    local_filename = export_clinvar_vcf(only_pathogenic=True)
+    print(f"Exported ClinVar VCF to {local_filename}")
