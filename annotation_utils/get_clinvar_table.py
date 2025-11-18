@@ -206,13 +206,13 @@ def export_clinvar_vcf(only_pathogenic=True, include_phenotypes=True):
         #last_evaluated=ht.last_evaluated,
         #in_gnomad=ht.in_gnomad,
     ))
-    
+
     if include_phenotypes:
         ht = ht.transmute(info=ht.info.annotate(phenotypes=ht.phenotypes))
 
     ht = ht.select('info')
     ht = ht.checkpoint(f"gs://bw2-delete-after-5-days/clinvar_{clinvar_release_date}_checkpoint.ht", overwrite=True)
-    local_filename = f"clinvar_{clinvar_release_date}.with_info.vcf.bgz"
+    local_filename = f"clinvar_{clinvar_release_date}.vcf.bgz"
     temp_bucket_path = f"gs://bw2-delete-after-5-days/{local_filename}"
 
     hl.export_vcf(ht, temp_bucket_path)
