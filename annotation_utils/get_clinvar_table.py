@@ -1,4 +1,5 @@
 import hail as hl
+import hailtop.fs as hfs
 import pandas as pd
 from annotation_utils.cache_utils import cache_data_table
 
@@ -118,7 +119,7 @@ def get_clinvar_gene_disease_table():
     ht = ht.filter(hl.str(ht.clinical_significance).lower().contains("pathogenic") & ~hl.str(ht.clinical_significance).lower().contains("pathogenicity"), keep=True)
 
     # get the set of ENSG gene ids from the transcript_consequences field using 
-    ht = ht.annotate(gene_id = hl.array(hl.set(ht.transcript_consequences.filter(lambda x: x.gene_id.startswith("ENSG") & hl.set(mane_transcripts).contains(x.transcript_id)).map(lambda x: x.gene_id))))
+    ht = ht.annotate(gene_id = hl.array(hl.set(ht.transcript_consequences.filter(lambda x: x.gene_id.startswith("ENSG")).map(lambda x: x.gene_id))))  #  & hl.set(mane_transcripts).contains(x.transcript_id)
 
     # filter out rows where gene_ids is empty
     ht = ht.filter(hl.len(ht.gene_id) > 0, keep=True)
@@ -158,6 +159,43 @@ def get_clinvar_gene_disease_table():
 
     return df
 
+def export_clinvar_vcf():
+    """Generate a VCF from the latest clinvar hail table in the gnomAD bucket"""
+    ht = hl.read_table("gs://gnomad-v4-data-pipeline/output/clinvar/clinvar_grch38_annotated_2.ht")
+    clinvar_release_date = ht.clinvar_release_date.collect()
+    clinvar_release_date = clinvar_release_date[0].replace("-", "_")
+
+    print(f"Exporting ClinVar VCF for release date: {clinvar_release_date}")
+    # check if clinical_significance string (when converted to lower case) contains "pathogenic" but not "pathogenicity"
+    # this excludes 'Conflicting classifications of pathogenicity' as well as 'Uncertain significance'
+    # but keeps 'Pathogenic', 'Likely pathogenic', and the many other combinations of these with other labels
+    ht = ht.filter(hl.str(ht.clinical_significance).lower().contains("pathogenic") & ~hl.str(ht.clinical_significance).lower().contains("pathogenicity"), keep=True)
+
+    ht = ht.annotate(phenotypes=hl.array(hl.sorted(hl.set(ht.submissions.map(lambda x: hl.str(", ").join(x.conditions.map(lambda y: y.name)))))))
+    ht = ht.annotate(phenotypes = hl.str(",").join(ht.phenotypes))
+    ht = ht.annotate(major_consequences = hl.str(",").join(hl.array(hl.sorted(hl.set(ht.transcript_consequences.map(lambda x: x.major_consequence))))))
+
+    ht = ht.drop("gnomad", "transcript_consequences", "submissions")
+    ht = ht.transmute(info=hl.struct(
+        REVIEW=ht.review_status,
+        CLINSIG=ht.clinical_significance,
+        GOLD_STARS=ht.gold_stars,
+        LAST_EVALUATED=ht.last_evaluated,
+        IN_GNOMAD=ht.in_gnomad,
+        CONSEQUENCES=ht.major_consequences,
+        PHENOTYPES=ht.phenotypes,
+        CLINVARID=ht.clinvar_variation_id,
+    ))
+
+    ht = ht.key_by(ht.locus, ht.alleles)
+
+
+    temp_bucket_path = f"gs://bw2-delete-after-5-days/clinvar_{clinvar_release_date}.vcf.bgz"
+    hl.export_vcf(ht, temp_bucket_path)
+    hfs.copy(temp_bucket_path, f"./clinvar_{clinvar_release_date}.vcf.bgz")
+    hfs.delete(temp_bucket_path)
+
 if __name__ == "__main__":
-    df = get_clinvar_gene_disease_table()
-    print(df)
+    #df = get_clinvar_gene_disease_table()
+    #print(df)
+    export_clinvar_vcf()
