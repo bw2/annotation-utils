@@ -194,11 +194,11 @@ def export_clinvar_vcf(only_pathogenic=True, include_phenotypes=True):
             .flatmap(lambda x: x.conditions.map(lambda y: y.name))
             .filter(lambda p: (p.lower() != "not provided") & (p.lower() != "not specified"))
         )
-        ht = ht.annotate(phenotypes = hl.str(", ").join(hl.sorted(hl.set(ht.phenotypes))))
+        ht = ht.annotate(phenotypes = hl.str(", ").join(hl.sorted(hl.set(ht.phenotypes))).replace(" ", "_"))
 
     
     ht = ht.transmute(info=hl.struct(
-        clinsig=ht.clinical_significance,  
+        clinsig=hl.str(ht.clinical_significance).replace(" ", "_"),
         stars=ht.gold_stars,
         clinvarid=ht.clinvar_variation_id,
         #consequences=ht.major_consequences,
