@@ -58,6 +58,15 @@ jobs:
       run: |
         python3 annotation_utils/add_phenotype_summary_using_AI.py combined_mendelian_gene_disease_table.tsv.gz
 
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+    - name: Upload to BigQuery
+      run: |
+        python3 annotation_utils/load_bigquery.py combined_mendelian_gene_disease_table_with_phenotype_summary.tsv.gz
+
     - name: Upload generated files as artifacts
       uses: actions/upload-artifact@v4
       if: always()
