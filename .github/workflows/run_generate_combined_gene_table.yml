@@ -41,14 +41,47 @@ jobs:
         restore-keys: |
           llm-cache-
 
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -e .
 
+    - name: Install GCS connector for Hail
+      run: |
+        # Download GCS connector into Spark's jars directory so Hail picks it up automatically
+        SPARK_HOME=$(python3 -c "import pyspark; print(pyspark.__path__[0])")
+        curl -sL "https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar" \
+          -o "$SPARK_HOME/jars/gcs-connector-hadoop3-latest.jar"
+
+        # Configure Hadoop to use the GCS connector with application default credentials
+        mkdir -p /tmp/hadoop-conf
+        cat > /tmp/hadoop-conf/core-site.xml << 'EOF'
+        <?xml version="1.0"?>
+        <configuration>
+          <property>
+            <name>fs.gs.impl</name>
+            <value>com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem</value>
+          </property>
+          <property>
+            <name>fs.AbstractFileSystem.gs.impl</name>
+            <value>com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS</value>
+          </property>
+          <property>
+            <name>google.cloud.auth.type</name>
+            <value>APPLICATION_DEFAULT</value>
+          </property>
+        </configuration>
+        EOF
+
     - name: Generate combined gene table
       env:
         OMIM_KEY: ${{ secrets.OMIM_KEY }}
+        HADOOP_CONF_DIR: /tmp/hadoop-conf
       run: |
         python3 annotation_utils/generate_combined_gene_table.py --skip-gwas
 
@@ -57,11 +90,6 @@ jobs:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
         python3 annotation_utils/add_phenotype_summary_using_AI.py combined_mendelian_gene_disease_table.tsv.gz
-
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v2
-      with:
-        credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
     - name: Upload to BigQuery
       run: |
