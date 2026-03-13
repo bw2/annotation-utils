@@ -10,9 +10,30 @@ import pymysql
 
 
 
-CURRENT_ENSEMBL_DATABASE = "homo_sapiens_core_115_38"
 ENSEMBL_HOST_EAST = "useastdb.ensembl.org"
 ENSEMBL_HOST_MAIN = "ensembldb.ensembl.org"
+
+_CURRENT_ENSEMBL_DATABASE = None
+
+def get_current_ensembl_database():
+    """Query the Ensembl server for the latest GRCh38 core database name."""
+    global _CURRENT_ENSEMBL_DATABASE
+    if _CURRENT_ENSEMBL_DATABASE is not None:
+        return _CURRENT_ENSEMBL_DATABASE
+
+    with pymysql.connect(host=ENSEMBL_HOST_EAST, user="anonymous") as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SHOW DATABASES LIKE 'homo_sapiens_core_%_38'")
+            databases = sorted([row[0] for row in cursor.fetchall()])
+
+    if not databases:
+        raise RuntimeError("No homo_sapiens_core_*_38 databases found on Ensembl server")
+
+    _CURRENT_ENSEMBL_DATABASE = databases[-1]
+    print(f"Using Ensembl database: {_CURRENT_ENSEMBL_DATABASE}")
+    return _CURRENT_ENSEMBL_DATABASE
+
+CURRENT_ENSEMBL_DATABASE = get_current_ensembl_database()
 
 
 """

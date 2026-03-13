@@ -19,9 +19,19 @@ def _get_clingen_table(url):
 
     table_contents = r.content.decode('UTF-8')
     lines = table_contents.split("\n")
-    header_line = lines[4]
-    #print(header_line)
-    table_contents = "\n".join([header_line] + lines[6:])
+    # Find the header line by looking for "GENE SYMBOL" rather than assuming a fixed position
+    header_idx = None
+    for i, line in enumerate(lines):
+        if '"GENE SYMBOL"' in line:
+            header_idx = i
+            break
+    if header_idx is None:
+        raise ValueError(f"Could not find header line containing 'GENE SYMBOL' in ClinGen download from {url}")
+    # Skip separator line (all +++) after the header
+    data_start = header_idx + 1
+    if data_start < len(lines) and lines[data_start].startswith('"+++'):
+        data_start += 1
+    table_contents = "\n".join([lines[header_idx]] + lines[data_start:])
     return pd.read_csv(StringIO(table_contents))
 
 
@@ -44,9 +54,22 @@ def get_clingen_haploinsufficient_genes_table():
         30: Some evidence a region is haploinsufficient.
         40: Strong evidence a region is haploinsufficient.
     """
-    df = pd.read_csv("https://search.clinicalgenome.org/kb/gene-dosage/download", skiprows=6, names=[
-        "GENE SYMBOL", "HGNC ID", "HAPLOINSUFFICIENCY", "TRIPLOSENSITIVITY", "ONLINE REPORT", "DATE",
-    ])
+    r = requests.get("https://search.clinicalgenome.org/kb/gene-dosage/download")
+    if not r.ok:
+        raise Exception(f"Failed to download ClinGen dosage sensitivity table: {r}")
+    lines = r.content.decode('UTF-8').split("\n")
+    header_idx = None
+    for i, line in enumerate(lines):
+        if '"GENE SYMBOL"' in line:
+            header_idx = i
+            break
+    if header_idx is None:
+        raise ValueError("Could not find header line containing 'GENE SYMBOL' in ClinGen dosage download")
+    data_start = header_idx + 1
+    if data_start < len(lines) and lines[data_start].startswith('"+++'):
+        data_start += 1
+    table_contents = "\n".join([lines[header_idx]] + lines[data_start:])
+    df = pd.read_csv(StringIO(table_contents))
     df = df[["HGNC ID", "HAPLOINSUFFICIENCY"]]
     df = df[~df["HAPLOINSUFFICIENCY"].isin([
         "No Evidence for Haploinsufficiency", 
@@ -63,7 +86,7 @@ if __name__ == "__main__":
     print("Haploinsufficient Genes Table columns:")
     print(df.iloc[0])
 
-    unknown_hgnc_ids = set(df["GENE ID (HGNC)"]) - set(get_hgnc_to_ensg_id_map().keys())
+    unknown_hgnc_ids = set(df["HGNC ID"]) - set(get_hgnc_to_ensg_id_map().keys())
     assert len(unknown_hgnc_ids) == 0, f"Unknown HGNC ids in haploinsufficient genes table: {', '.join(unknown_hgnc_ids)}"
 
 

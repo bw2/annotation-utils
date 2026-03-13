@@ -84,6 +84,7 @@ def get_gencc_table():
         "Mitochondrial": "MITO",
         "X-linked recessive": "XR",
         "X-linked": "XR",
+        "Y-linked inheritance": "YL",
     })
 
     return df

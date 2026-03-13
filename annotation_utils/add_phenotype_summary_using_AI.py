@@ -1,7 +1,9 @@
 import argparse
+import glob
 import pandas as pd
 from dotenv import load_dotenv
 import time
+import os
 import sys
 load_dotenv()
 
@@ -119,51 +121,59 @@ df["LLM_phenotype_summary"] = df.apply(summarize_phenotypes, axis=1, prompt_pref
 df["disease_category"] = df.apply(summarize_phenotypes, axis=1, prompt_prefix=prompt_prefix2, blank_if_no_phenotypes=True)
 
 
-clingen_df = pd.read_csv("~/code/annotation-utils/CLINGEN_curations_export_at_2025-08-07_14_20_34.csv")
-"""Columns:
-Gene Symbol	Expert Panel	Curator	Disease Entity	Curation Type	Rationales	Uploaded Date	Precuration Date	Disease entity assigned Date	Precuration Complete Date	Curation Provisional Date	Curation Approved Date	Recuration assigned Date	Retired Assignment Date	Published Date	Classification	Created	GCI UUID		
-"""
+clingen_curations_dir = os.path.dirname(os.path.dirname(__file__))
+clingen_curations_files = sorted(glob.glob(os.path.join(clingen_curations_dir, "CLINGEN_curations_export_at_*.csv")))
+if not clingen_curations_files:
+    print(f"WARNING: No CLINGEN_curations_export_at_*.csv files found in {clingen_curations_dir}. Skipping ClinGen curation processing.")
+    df["clingen_curation"] = ""
+else:
+    clingen_curations_path = clingen_curations_files[-1]  # use the latest file
+    print(f"Using ClinGen curations file: {clingen_curations_path}")
+    clingen_df = pd.read_csv(clingen_curations_path)
+    """Columns:
+    Gene Symbol	Expert Panel	Curator	Disease Entity	Curation Type	Rationales	Uploaded Date	Precuration Date	Disease entity assigned Date	Precuration Complete Date	Curation Provisional Date	Curation Approved Date	Recuration assigned Date	Retired Assignment Date	Published Date	Classification	Created	GCI UUID
+    """
 
-gene_name_to_clingen_curation_value = {}
-gene_alias_to_gene_name = {}
-duplicate_aliases = []
-for _, row in df.iterrows():
-    if not pd.isna(row["gene_symbol"]) and row["gene_symbol"]:
-        gene_name_to_clingen_curation_value[row["gene_symbol"].upper()] = None
+    gene_name_to_clingen_curation_value = {}
+    gene_alias_to_gene_name = {}
+    duplicate_aliases = []
+    for _, row in df.iterrows():
+        if not pd.isna(row["gene_symbol"]) and row["gene_symbol"]:
+            gene_name_to_clingen_curation_value[row["gene_symbol"].upper()] = None
 
-    if not pd.isna(row["gene_aliases"]) and row["gene_aliases"]:
-        gene_symbol = row["gene_symbol"].upper()
-        for alias in row["gene_aliases"].split(","):
-            alias = alias.strip().upper()
-            if alias in gene_alias_to_gene_name and gene_alias_to_gene_name[alias] != gene_symbol:
-                #print(f"WARNING: Duplicate alias: {alias} for {row['gene_symbol']} and {gene_alias_to_gene_name[alias]}")
-                duplicate_aliases.append(alias)
-            else:
-                gene_alias_to_gene_name[alias] = gene_symbol
+        if not pd.isna(row["gene_aliases"]) and row["gene_aliases"] and not pd.isna(row["gene_symbol"]) and row["gene_symbol"]:
+            gene_symbol = row["gene_symbol"].upper()
+            for alias in row["gene_aliases"].split(","):
+                alias = alias.strip().upper()
+                if alias in gene_alias_to_gene_name and gene_alias_to_gene_name[alias] != gene_symbol:
+                    #print(f"WARNING: Duplicate alias: {alias} for {row['gene_symbol']} and {gene_alias_to_gene_name[alias]}")
+                    duplicate_aliases.append(alias)
+                else:
+                    gene_alias_to_gene_name[alias] = gene_symbol
 
-for alias in duplicate_aliases:
-    if alias in gene_alias_to_gene_name:
-        del gene_alias_to_gene_name[alias]
+    for alias in duplicate_aliases:
+        if alias in gene_alias_to_gene_name:
+            del gene_alias_to_gene_name[alias]
 
-clingen_gene_names_not_in_df = []
-for _, row in clingen_df.iterrows():
-    if not pd.isna(row["Curation Type"]) and row["Curation Type"]: 
-        value = f"Curated: {row['Curation Type']}"
-    else:
-        value = "In Scope"
+    clingen_gene_names_not_in_df = []
+    for _, row in clingen_df.iterrows():
+        if not pd.isna(row["Curation Type"]) and row["Curation Type"]:
+            value = f"Curated: {row['Curation Type']}"
+        else:
+            value = "In Scope"
 
-    gene_name = row["Gene Symbol"].strip().upper()
-    gene_name = gene_alias_to_gene_name.get(gene_name, gene_name)
-    if gene_name not in gene_name_to_clingen_curation_value:
-        clingen_gene_names_not_in_df.append(gene_name)
-    elif gene_name_to_clingen_curation_value[gene_name] is None or not gene_name_to_clingen_curation_value[gene_name].startswith("Curated"):
-        gene_name_to_clingen_curation_value[gene_name] = value
-    elif gene_name_to_clingen_curation_value[gene_name] != value and value is not None and value.startswith("Curated"):
-        gene_name_to_clingen_curation_value[gene_name] += f", {value.replace('Curated: ', '')}"
+        gene_name = row["Gene Symbol"].strip().upper()
+        gene_name = gene_alias_to_gene_name.get(gene_name, gene_name)
+        if gene_name not in gene_name_to_clingen_curation_value:
+            clingen_gene_names_not_in_df.append(gene_name)
+        elif gene_name_to_clingen_curation_value[gene_name] is None or not gene_name_to_clingen_curation_value[gene_name].startswith("Curated"):
+            gene_name_to_clingen_curation_value[gene_name] = value
+        elif gene_name_to_clingen_curation_value[gene_name] != value and value is not None and value.startswith("Curated"):
+            gene_name_to_clingen_curation_value[gene_name] += f", {value.replace('Curated: ', '')}"
 
-print(f"{len(clingen_gene_names_not_in_df):,} CLINGEN gene names not in df: {', '.join(clingen_gene_names_not_in_df)}")
+    print(f"{len(clingen_gene_names_not_in_df):,} CLINGEN gene names not in df: {', '.join(clingen_gene_names_not_in_df)}")
 
-df["clingen_curation"] = df["gene_symbol"].str.upper().map(gene_name_to_clingen_curation_value)
+    df["clingen_curation"] = df["gene_symbol"].str.upper().map(gene_name_to_clingen_curation_value)
 
 # move the LLM_phenotype_summary column to be after the 'inheritance' column
 initial_columns = [

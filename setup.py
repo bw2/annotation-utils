@@ -22,7 +22,7 @@ class PublishCommand(build_py):
 def test_suite():
     """Discover unittests"""
     test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover('annotations', pattern='*tests.py')
+    test_suite = test_loader.discover('annotation_utils', pattern='*tests.py')
     return test_suite
 
 

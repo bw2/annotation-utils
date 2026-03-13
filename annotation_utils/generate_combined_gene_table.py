@@ -28,7 +28,17 @@ include_GWAS = not args.skip_gwas
 include_Fridman = not args.skip_fridman
 print_example_genes = args.print_example_genes
 
-separtor = "; "
+separator = "; "
+
+def safe_max(values, default=float('nan')):
+    """Return max of non-empty values, or default if all values are empty."""
+    non_empty = [float(v) for v in values if v != ""]
+    return max(non_empty) if non_empty else default
+
+def safe_min(values, default=float('nan')):
+    """Return min of non-empty values, or default if all values are empty."""
+    non_empty = [float(v) for v in values if v != ""]
+    return min(non_empty) if non_empty else default
 
 def normalize_nulls(x):
     x = x if not pd.isna(x) else ""
@@ -106,11 +116,11 @@ print("\t", f"Kept {len(df_omim):,d} out of {before:,d} ({(len(df_omim) / before
 
 # group by gene_id and combine the other fields using ; as a separator
 df_omim = df_omim.groupby("OMIM_gene_id").agg({
-    "OMIM_mim_number": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "OMIM_phenotype_mim_number": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "OMIM_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "OMIM_phenotype_description": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    #"OMIM_phenotypic_series_number": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "OMIM_mim_number": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "OMIM_phenotype_mim_number": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "OMIM_inheritance": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "OMIM_phenotype_description": lambda x: separator.join(normalize_nulls(v) for v in x),
+    #"OMIM_phenotypic_series_number": lambda x: separator.join(normalize_nulls(v) for v in x),
     #"LOEUF": lambda x: normalize_nulls(x.iloc[0]), 
     #"pLI": lambda x: normalize_nulls(x.iloc[0]),
     #"mis_z": lambda x: normalize_nulls(x.iloc[0]),
@@ -187,11 +197,11 @@ print("\t", f"Kept {len(df_clingen):,d} out of {before:,d} ({(len(df_clingen) / 
 
 # group by CLINGEN_gene_id and combine the other fields using ; as a separator
 df_clingen = df_clingen.groupby("CLINGEN_gene_id").agg({
-    "CLINGEN_disease_label": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "CLINGEN_disease_mondo_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "CLINGEN_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "CLINGEN_classification": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "CLINGEN_haploinsufficient": lambda x: separtor.join(sorted(set(normalize_nulls(v) for v in x))),
+    "CLINGEN_disease_label": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "CLINGEN_disease_mondo_id": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "CLINGEN_inheritance": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "CLINGEN_classification": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "CLINGEN_haploinsufficient": lambda x: separator.join(sorted(set(normalize_nulls(v) for v in x))),
 }).reset_index()
 
 df_clingen.set_index("CLINGEN_gene_id", inplace=True)
@@ -229,10 +239,10 @@ df_constraint_scores = df_constraint_scores[[
 ]]
 
 df_constraint_scores = df_constraint_scores.groupby("CONSTRAINT_scores_gene_id").agg({
-    "pLI_v2": lambda x: max(float(v) for v in x if v != ""),
-    "pLI_v4": lambda x: max(float(v) for v in x if v != ""),
-    "lof_oe_ci_upper_v4": lambda x: min(float(v) for v in x if v != ""),
-    "mis_oe_ci_upper_v4": lambda x: min(float(v) for v in x if v != ""),
+    "pLI_v2": lambda x: safe_max(x),
+    "pLI_v4": lambda x: safe_max(x),
+    "lof_oe_ci_upper_v4": lambda x: safe_min(x),
+    "mis_oe_ci_upper_v4": lambda x: safe_min(x),
 }).reset_index()
 
 df_constraint_scores.set_index("CONSTRAINT_scores_gene_id", inplace=True)
@@ -294,13 +304,13 @@ df_panel_app = df_panel_app[[
 ]]
 
 df_panel_app = df_panel_app.groupby(["gene_id", "source"]).agg({
-    "confidence": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "penetrance": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "mode_of_pathogenicity": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "mode_of_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "evidence": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "phenotypes": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "panel_name": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "confidence": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "penetrance": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "mode_of_pathogenicity": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "mode_of_inheritance": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "evidence": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "phenotypes": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "panel_name": lambda x: separator.join(normalize_nulls(v) for v in x),
 }).reset_index()
 
 # drop column "source"
@@ -338,7 +348,11 @@ print("Getting table of recessive genes from Fridman et al. 2025")
 transcript_id_to_gene_id = get_transcript_id_to_gene_id()
 
 fridman_path = "annotation_utils/data/AR_genes_from_Fridman_2025.tsv"
-if include_Fridman and os.path.exists(fridman_path):
+if include_Fridman and not os.path.exists(fridman_path):
+    print(f"WARNING: Fridman file not found at {fridman_path}. Skipping Fridman data.")
+    include_Fridman = False
+
+if include_Fridman:
     df_fridman = pd.read_table(fridman_path)
     df_fridman["FRIDMAN_gene_id"] = df_fridman["Transcripts"].apply(
         lambda transcript_list: ", ".join(transcript_id_to_gene_id[t] for t in transcript_list.split(",") if t in transcript_id_to_gene_id)
@@ -362,9 +376,9 @@ if include_Fridman and os.path.exists(fridman_path):
 
 
     df_fridman = df_fridman.groupby("FRIDMAN_gene_id").agg({
-        "FRIDMAN_omim_phenotype_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
-        "FRIDMAN_phenotype_category": lambda x: separtor.join(normalize_nulls(v) for v in x),
-        "FRIDMAN_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
+        "FRIDMAN_omim_phenotype_id": lambda x: separator.join(normalize_nulls(v) for v in x),
+        "FRIDMAN_phenotype_category": lambda x: separator.join(normalize_nulls(v) for v in x),
+        "FRIDMAN_inheritance": lambda x: separator.join(normalize_nulls(v) for v in x),
     }).reset_index()
 
     df_fridman["InFridman"] = True
@@ -410,17 +424,17 @@ if include_GWAS:
     df_gwas = df_gwas[df_gwas["GWAS_gene_id"].notna() & (df_gwas["GWAS_gene_id"] != "")]
 
     df_gwas = df_gwas.groupby("GWAS_gene_id").agg({
-        "GWAS_mondo_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
-        "GWAS_mondo_name": lambda x: separtor.join(normalize_nulls(v) for v in x),
-        "GWAS_mondo_category": lambda x: separtor.join(normalize_nulls(v) for v in x),
-        "GWAS_gene_type": lambda x: separtor.join(normalize_nulls(v) for v in x),
-        "GWAS_gene_distance": lambda x: separtor.join(normalize_nulls(v) for v in x),
-        "GWAS_chr_id": lambda x: separtor.join(normalize_nulls(v) for v in x),
-        "GWAS_chr_pos": lambda x: separtor.join(normalize_nulls(v) for v in x),
-        "GWAS_snps": lambda x: separtor.join(normalize_nulls(v) for v in x),
-        "GWAS_p_value": lambda x: min(float(v) for v in x if v != ""),
-        "GWAS_odds_ratio_or_beta": lambda x: min(float(v) for v in x if v != ""),
-        "GWAS_95_ci_text": lambda x: separtor.join(normalize_nulls(v) for v in x),
+        "GWAS_mondo_id": lambda x: separator.join(normalize_nulls(v) for v in x),
+        "GWAS_mondo_name": lambda x: separator.join(normalize_nulls(v) for v in x),
+        "GWAS_mondo_category": lambda x: separator.join(normalize_nulls(v) for v in x),
+        "GWAS_gene_type": lambda x: separator.join(normalize_nulls(v) for v in x),
+        "GWAS_gene_distance": lambda x: separator.join(normalize_nulls(v) for v in x),
+        "GWAS_chr_id": lambda x: separator.join(normalize_nulls(v) for v in x),
+        "GWAS_chr_pos": lambda x: separator.join(normalize_nulls(v) for v in x),
+        "GWAS_snps": lambda x: separator.join(normalize_nulls(v) for v in x),
+        "GWAS_p_value": lambda x: safe_min(x),
+        "GWAS_odds_ratio_or_beta": lambda x: safe_min(x),
+        "GWAS_95_ci_text": lambda x: separator.join(normalize_nulls(v) for v in x),
     }).reset_index()
 
     df_gwas["InGWAS"] = True
@@ -456,9 +470,9 @@ df_gencc = df_gencc[[
 ]]
 
 df_gencc = df_gencc.groupby("GENCC_gene_id").agg({
-    "GENCC_disease_name": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "GENCC_classification": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "GENCC_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "GENCC_disease_name": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "GENCC_classification": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "GENCC_inheritance": lambda x: separator.join(normalize_nulls(v) for v in x),
 }).reset_index()
 
 df_gencc.set_index("GENCC_gene_id", inplace=True)
@@ -473,8 +487,8 @@ df_decipher.rename(columns={
 }, inplace=True)
 
 df_decipher = df_decipher.groupby("DECIPHER_gene_id").agg({
-    "DECIPHER_inheritance": lambda x: separtor.join(normalize_nulls(v) for v in x),
-    "DECIPHER_disease_names": lambda x: separtor.join(normalize_nulls(v) for v in x),
+    "DECIPHER_inheritance": lambda x: separator.join(normalize_nulls(v) for v in x),
+    "DECIPHER_disease_names": lambda x: separator.join(normalize_nulls(v) for v in x),
 }).reset_index()
 
 df_decipher.set_index("DECIPHER_gene_id", inplace=True)
@@ -640,16 +654,18 @@ if include_Fridman:
 
 def summarize_inheritance(row):
     inheritance = set()
-    for column in [
+    columns = [
         "OMIM_inheritance",
         "CLINGEN_inheritance",
         "GENCC_inheritance",
         "PANEL_APP_UK_inheritance",
         "PANEL_APP_AU_inheritance",
         "DECIPHER_inheritance",
-        "FRIDMAN_inheritance",
-    ]:
-        if isinstance(row[column], str):
+    ]
+    if include_Fridman:
+        columns.append("FRIDMAN_inheritance")
+    for column in columns:
+        if column in row and isinstance(row[column], str):
             inheritance.update({i.strip() for i in row[column].split(";") if i.strip() != ""})
 
     return "" if len(inheritance) == 0 else "; ".join(sorted(inheritance))

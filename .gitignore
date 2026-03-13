@@ -1,5 +1,12 @@
 .idea
+*.iml
 
+*.tsv.gz
+*.bed.gz
+*.bed
+*.vcf.gz
+*.vcf.bgz
+CLAUDE*.md
 *.tsv
 *.csv
 *.txt

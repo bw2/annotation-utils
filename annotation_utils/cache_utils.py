@@ -1,3 +1,4 @@
+import functools
 import gzip
 import hashlib
 import json
@@ -18,6 +19,7 @@ def cache_data_table(get_table_func):
     If no, it calls the function and then saves the result table to ~/.annotations before returning it.
     """
 
+    @functools.wraps(get_table_func)
     def wrapper(*args, **kwargs):
         # create cache dir
         if not os.path.isdir(CACHE_DIR):
@@ -30,11 +32,11 @@ def cache_data_table(get_table_func):
         filename = re.sub("^get_", "", function_name) + f".{h}.tsv.gz"
         cache_file_path = os.path.join(CACHE_DIR, filename)
 
-        # use the cached file if it's less than 1 week old
+        # use the cached file if it's less than 5 days old
         if (
-            not FORCE_DOWNLOAD and 
-            os.path.isfile(cache_file_path) and 
-            os.path.getmtime(cache_file_path) > time.time() - 7 * 24 * 60 * 60
+            not FORCE_DOWNLOAD and
+            os.path.isfile(cache_file_path) and
+            os.path.getmtime(cache_file_path) > time.time() - 5 * 24 * 60 * 60
         ):
             df = pd.read_table(cache_file_path)
             print(f"Read {len(df):,d} rows from cache file {cache_file_path}")
@@ -59,7 +61,8 @@ def cache_json(get_json_func):
     cache dir (~/.annotations). If yes, it just reads the json from disk and returns it.
     If no, it calls the function and then saves the result json to ~/.annotations before returning it.
     """
-    
+
+    @functools.wraps(get_json_func)
     def wrapper(*args, **kwargs):
 
         # create cache dir
@@ -73,11 +76,11 @@ def cache_json(get_json_func):
         filename = re.sub("^get_", "", function_name) + f".{h}.json.gz"
         cache_file_path = os.path.join(CACHE_DIR, filename)
 
-        # use the cached file if it's less than 1 week old
+        # use the cached file if it's less than 5 days old
         if (
-            not FORCE_DOWNLOAD and 
-            os.path.isfile(cache_file_path) and 
-            os.path.getmtime(cache_file_path) > time.time() - 7 * 24 * 60 * 60
+            not FORCE_DOWNLOAD and
+            os.path.isfile(cache_file_path) and
+            os.path.getmtime(cache_file_path) > time.time() - 5 * 24 * 60 * 60
         ):
             return json.load(gzip.open(cache_file_path, "rt"))
 
