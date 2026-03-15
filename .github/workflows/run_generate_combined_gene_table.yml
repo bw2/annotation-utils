@@ -33,16 +33,16 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
-    - name: Cache annotation data
-      uses: actions/cache@v4
+    - name: Restore annotation data cache
+      uses: actions/cache/restore@v4
       with:
         path: ~/.annotations
         key: annotations-cache-${{ github.run_id }}
         restore-keys: |
           annotations-cache-
 
-    - name: Cache LLM response database
-      uses: actions/cache@v4
+    - name: Restore LLM response cache
+      uses: actions/cache/restore@v4
       with:
         path: .cache/llm_response_cache.db
         key: llm-cache-${{ github.run_id }}
@@ -111,3 +111,17 @@ jobs:
         path: |
           combined_mendelian_gene_disease_table_with_phenotype_summary.tsv.gz
         retention-days: 30
+
+    - name: Save annotation data cache
+      uses: actions/cache/save@v4
+      if: always()
+      with:
+        path: ~/.annotations
+        key: annotations-cache-${{ github.run_id }}
+
+    - name: Save LLM response cache
+      uses: actions/cache/save@v4
+      if: always()
+      with:
+        path: .cache/llm_response_cache.db
+        key: llm-cache-${{ github.run_id }}
