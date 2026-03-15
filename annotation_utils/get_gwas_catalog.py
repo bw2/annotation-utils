@@ -14,10 +14,18 @@ def _download_gwas_catalog():
     """
     Download the GWAS catalog and return it as a pandas DataFrame
     """
-    print("Downloading GWAS catalog")
+    import time as _time
 
-    df_gwas = pd.read_table(GWAS_CATALOG_URL)
-    return df_gwas
+    for attempt in range(1, 4):
+        try:
+            print(f"Downloading GWAS catalog (attempt {attempt})")
+            return pd.read_table(GWAS_CATALOG_URL)
+        except Exception as e:
+            if attempt < 3:
+                print(f"  Failed: {e}. Retrying in 30 seconds...")
+                _time.sleep(30)
+            else:
+                raise
 
 
 @cache_data_table
