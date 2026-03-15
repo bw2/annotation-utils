@@ -8,7 +8,7 @@ on:
 jobs:
   generate-gene-table:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 360
 
     steps:
     - name: Checkout code
