@@ -33,6 +33,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
+    - name: Cache annotation data
+      uses: actions/cache@v4
+      with:
+        path: ~/.annotations
+        key: annotations-cache-${{ github.run_id }}
+        restore-keys: |
+          annotations-cache-
+
     - name: Cache LLM response database
       uses: actions/cache@v4
       with:
@@ -83,7 +91,7 @@ jobs:
         OMIM_KEY: ${{ secrets.OMIM_KEY }}
         HADOOP_CONF_DIR: /tmp/hadoop-conf
       run: |
-        python3 annotation_utils/generate_combined_gene_table.py --skip-gwas
+        python3 annotation_utils/generate_combined_gene_table.py
 
     - name: Add phenotype summary using AI
       env:
