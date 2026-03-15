@@ -91,7 +91,7 @@ jobs:
         OMIM_KEY: ${{ secrets.OMIM_KEY }}
         HADOOP_CONF_DIR: /tmp/hadoop-conf
       run: |
-        python3 annotation_utils/generate_combined_gene_table.py
+        python3 annotation_utils/generate_combined_gene_table.py --skip-gwas
 
     - name: Add phenotype summary using AI
       env:
