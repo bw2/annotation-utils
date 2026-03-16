@@ -177,8 +177,8 @@ else:
 
 # move the LLM_phenotype_summary column to be after the 'inheritance' column
 initial_columns = [
-    "gene_id", "gene_symbol", "gene_aliases",  "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4",
-    "hgnc_gene_id", "inheritance",  "disease_category", "clingen_curation", "LLM_phenotype_summary", "sources",
+    "ensembl_gene_id", "hgnc_gene_id", "gene_symbol", "gene_aliases",  "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4",
+    "inheritance",  "disease_category", "clingen_curation", "LLM_phenotype_summary", "sources",
     "chrom", "start", "end",
 ]
 

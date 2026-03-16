@@ -44,7 +44,7 @@ def normalize_nulls(x):
     x = x if not pd.isna(x) else ""
     if isinstance(x, float) and x.is_integer():
         x = int(x)
-    
+
     return str(x)
 
 HGNC_to_ENSG_map = get_hgnc_to_ensg_id_map()
@@ -82,16 +82,16 @@ df_omim = df_omim[df_omim["phenotype_mim_number"].notna() & (df_omim["phenotype_
 print(" "*8, f"Kept {len(df_omim):,d} rows from OMIM, containing {len(df_omim['gene_id'].unique()):,d} unique genes")
 df_omim = df_omim[[
     "gene_id",   # ENSG id
-    "mim_number", 
-    "phenotype_mim_number", 
-    "phenotype_inheritance", 
-    "phenotype_description", 
-    #"phenotypic_series_number", 
-    #"gene_symbols", 
-    #"gene_description", 
-    #"mouse_gene_id", 
-    #"oe_lof_upper", 
-    #"pLI", 
+    "mim_number",
+    "phenotype_mim_number",
+    "phenotype_inheritance",
+    "phenotype_description",
+    #"phenotypic_series_number",
+    #"gene_symbols",
+    #"gene_description",
+    #"mouse_gene_id",
+    #"oe_lof_upper",
+    #"pLI",
     #"mis_z",
 ]]
 
@@ -121,7 +121,7 @@ df_omim = df_omim.groupby("OMIM_gene_id").agg({
     "OMIM_inheritance": lambda x: separator.join(normalize_nulls(v) for v in x),
     "OMIM_phenotype_description": lambda x: separator.join(normalize_nulls(v) for v in x),
     #"OMIM_phenotypic_series_number": lambda x: separator.join(normalize_nulls(v) for v in x),
-    #"LOEUF": lambda x: normalize_nulls(x.iloc[0]), 
+    #"LOEUF": lambda x: normalize_nulls(x.iloc[0]),
     #"pLI": lambda x: normalize_nulls(x.iloc[0]),
     #"mis_z": lambda x: normalize_nulls(x.iloc[0]),
 }).reset_index()
@@ -173,12 +173,15 @@ df_clingen = df_clingen.rename(columns={
 
 df_clingen = df_clingen.set_index("GENE ID (HGNC)").join(df_clingen_haploinsufficient_genes, how="outer").reset_index()
 
+# Convert HGNC -> ENSG for joining, but preserve native HGNC ID
 df_clingen["CLINGEN_gene_id"] = df_clingen["GENE ID (HGNC)"].map(HGNC_to_ENSG_map)
+df_clingen["CLINGEN_hgnc_gene_id"] = df_clingen["GENE ID (HGNC)"]
 hgnc_ids_with_missing_esng = df_clingen[df_clingen['CLINGEN_gene_id'].isna()]['GENE ID (HGNC)'].unique()
 assert len(hgnc_ids_with_missing_esng) == 0, f"Could not convert the following HGNC ids to ENSG: {', '.join(hgnc_ids_with_missing_esng)}"
 
 df_clingen = df_clingen[[
     "CLINGEN_gene_id",
+    "CLINGEN_hgnc_gene_id",
     "CLINGEN_disease_label",
     "CLINGEN_disease_mondo_id",
     "CLINGEN_inheritance",
@@ -197,6 +200,7 @@ print("\t", f"Kept {len(df_clingen):,d} out of {before:,d} ({(len(df_clingen) / 
 
 # group by CLINGEN_gene_id and combine the other fields using ; as a separator
 df_clingen = df_clingen.groupby("CLINGEN_gene_id").agg({
+    "CLINGEN_hgnc_gene_id": "first",
     "CLINGEN_disease_label": lambda x: separator.join(normalize_nulls(v) for v in x),
     "CLINGEN_disease_mondo_id": lambda x: separator.join(normalize_nulls(v) for v in x),
     "CLINGEN_inheritance": lambda x: separator.join(normalize_nulls(v) for v in x),
@@ -447,6 +451,7 @@ df_gencc = get_gencc_table()
 """
 [
     "gene_id",
+    "hgnc_gene_id",
     "disease_id",
     "disease_name",
     "classification",
@@ -455,6 +460,7 @@ df_gencc = get_gencc_table()
 """
 df_gencc.rename(columns={
     "gene_id": "GENCC_gene_id",
+    "hgnc_gene_id": "GENCC_hgnc_gene_id",
     "disease_id": "GENCC_disease_id",
     "disease_name": "GENCC_disease_name",
     "classification": "GENCC_classification",
@@ -463,6 +469,7 @@ df_gencc.rename(columns={
 
 df_gencc = df_gencc[[
     "GENCC_gene_id",
+    "GENCC_hgnc_gene_id",
     #"GENCC_disease_id",
     "GENCC_disease_name",
     "GENCC_classification",
@@ -470,6 +477,7 @@ df_gencc = df_gencc[[
 ]]
 
 df_gencc = df_gencc.groupby("GENCC_gene_id").agg({
+    "GENCC_hgnc_gene_id": "first",
     "GENCC_disease_name": lambda x: separator.join(normalize_nulls(v) for v in x),
     "GENCC_classification": lambda x: separator.join(normalize_nulls(v) for v in x),
     "GENCC_inheritance": lambda x: separator.join(normalize_nulls(v) for v in x),
@@ -602,13 +610,19 @@ df_combined = pd.concat([df_combined, df_highly_constrained_genes])
 
 df_combined.reset_index(inplace=True)
 df_combined.rename(columns={
-    "index": "gene_id",
+    "index": "ensembl_gene_id",
 }, inplace=True)
 
+# Build hgnc_gene_id by coalescing: native HGNC from ClinGen/GenCC first, then ENSG->HGNC map as fallback
+df_combined["hgnc_gene_id"] = df_combined["CLINGEN_hgnc_gene_id"].combine_first(
+    df_combined["GENCC_hgnc_gene_id"]
+).combine_first(
+    df_combined["ensembl_gene_id"].map(ENSG_to_HGNC_map)
+)
+df_combined.drop(columns=["CLINGEN_hgnc_gene_id", "GENCC_hgnc_gene_id"], inplace=True)
 
-df_combined["gene_symbol"] = df_combined["gene_id"].map(ENSG_to_gene_name_map).str.upper()
-df_combined["gene_aliases"] = df_combined["gene_id"].map(ENSG_to_gene_name_aliases_map).str.upper()
-df_combined["hgnc_gene_id"] = df_combined["gene_id"].map(ENSG_to_HGNC_map)
+df_combined["gene_symbol"] = df_combined["ensembl_gene_id"].map(ENSG_to_gene_name_map).str.upper()
+df_combined["gene_aliases"] = df_combined["ensembl_gene_id"].map(ENSG_to_gene_name_aliases_map).str.upper()
 #if df_combined["hgnc_gene_id"].isna().sum() > 0:
 #    print(f"WARNING: {df_combined['hgnc_gene_id'].isna().sum():,d} genes had no HGNC id")
 #    print(df_combined[df_combined["hgnc_gene_id"].isna()])
@@ -672,8 +686,8 @@ def summarize_inheritance(row):
 
 df_combined["inheritance"] = df_combined.apply(summarize_inheritance, axis=1)
 
-# move the gene_id, gene_symbol, and gene_aliases columns to the front
-initial_columns = ["gene_id", "gene_symbol", "gene_aliases",  "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4", "hgnc_gene_id", "inheritance", "sources"]
+# move the gene_id, hgnc_gene_id, gene_symbol, and gene_aliases columns to the front
+initial_columns = ["ensembl_gene_id", "hgnc_gene_id", "gene_symbol", "gene_aliases", "pLI_v2", "pLI_v4", "lof_oe_ci_upper_v4", "mis_oe_ci_upper_v4", "inheritance", "sources"]
 df_combined = df_combined[initial_columns + [c for c in df_combined.columns if c not in initial_columns]]
 #df_combined.sort_values(by=["sources", "gene_id"], inplace=True)
 
@@ -687,4 +701,3 @@ output_path = f"combined_mendelian_gene_disease_table.only_in_clinvar.tsv.gz"
 df_clinvar_only = df_combined[(df_combined["sources"] == "1: ClinVar") | (df_combined["sources"] == "2: ClinVar, Fridman")]
 df_clinvar_only.to_csv(output_path, sep="\t", index=False)
 print(f"Wrote {len(df_clinvar_only):,d} genes to {output_path}")
-

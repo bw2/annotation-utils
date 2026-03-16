@@ -5,7 +5,7 @@ import pandas as pd
 from google.cloud import bigquery
 
 PROJECT_ID = "cmg-analysis"
-DATASET_ID = "mendelian_gene_disease_associations"
+DATASET_ID = "gene_lookup"
 TABLE_ID = "combined_gene_disease_association_table"
 
 

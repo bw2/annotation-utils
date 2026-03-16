@@ -31,7 +31,7 @@ submitted_as_date                                                    2018-03-30 
 submitted_as_public_report_url                                                       NaN
 submitted_as_notes                                                                   NaN
 submitted_as_pmids                                                                   NaN
-submitted_as_assertion_criteria_url                                       PMID: 28106320
+submitted_as_assertion_criteria_url                                       PMID: 28106320
 submitted_as_submission_id                                                          1034
 submitted_run_date                                                            2020-12-24
 """
@@ -51,6 +51,7 @@ def get_gencc_table():
     df = pd.read_table( "https://search.thegencc.org/download/action/submissions-export-tsv")
 
     df["gene_id"] = df["gene_curie"].map(HGNC_to_ENSG_map)
+    df["hgnc_gene_id"] = df["gene_curie"]
     df.rename(columns={
         "disease_curie": "disease_id",
         "disease_title": "disease_name",
@@ -60,6 +61,7 @@ def get_gencc_table():
 
     df = df[[
         "gene_id",
+        "hgnc_gene_id",
         "disease_id",
         "disease_name",
         "classification",
