@@ -86,6 +86,9 @@ jobs:
         </configuration>
         EOF
 
+    - name: Clear stale GenCC cache (schema changed)
+      run: rm -f ~/.annotations/gencc_table.*.tsv.gz
+
     - name: Generate combined gene table
       env:
         OMIM_KEY: ${{ secrets.OMIM_KEY }}
