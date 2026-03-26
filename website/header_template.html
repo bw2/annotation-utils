@@ -214,7 +214,7 @@
             'PanelApp_AU': '#8e44ad',
             'Decipher': '#f39c12',
             'ClinVar': '#1abc9c',
-            'Fridman': '#e67e22',
+            'Fridman 2025': '#e67e22',
         }
 
         const badges = sourcesList.map(src => {
@@ -609,21 +609,21 @@
             getRequiredColumns: () => ['CLINVAR_variant_consequences'],
         },
         FRIDMAN_omim_phenotype_id: {
-            displayName: 'Fridman OMIM ID',
+            displayName: 'Fridman 2025 OMIM ID',
             helpText: RESULTS_TABLE_COLUMN_HELP_TEXTS['FRIDMAN_omim_phenotype_id'],
             getValue: (row) => row['FRIDMAN_omim_phenotype_id'] || '',
             getSortColumns: () => ['FRIDMAN_omim_phenotype_id'],
             getRequiredColumns: () => ['FRIDMAN_omim_phenotype_id'],
         },
         FRIDMAN_phenotype_category: {
-            displayName: 'Fridman Category',
+            displayName: 'Fridman 2025 Category',
             helpText: RESULTS_TABLE_COLUMN_HELP_TEXTS['FRIDMAN_phenotype_category'],
             getValue: (row) => row['FRIDMAN_phenotype_category'] || '',
             getSortColumns: () => ['FRIDMAN_phenotype_category'],
             getRequiredColumns: () => ['FRIDMAN_phenotype_category'],
         },
         FRIDMAN_inheritance: {
-            displayName: 'Fridman Inheritance',
+            displayName: 'Fridman 2025 Inheritance',
             helpText: RESULTS_TABLE_COLUMN_HELP_TEXTS['FRIDMAN_inheritance'],
             getValue: (row) => row['FRIDMAN_inheritance'] || '',
             getSortColumns: () => ['FRIDMAN_inheritance'],
