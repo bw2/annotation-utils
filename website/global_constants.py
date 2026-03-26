@@ -73,7 +73,7 @@ BIGQUERY_COLUMNS = [
     },
     {
         "type": "STRING",
-        "name": "chrom",
+        "name": "gene_chrom",
         "description": "Chromosome name.",
         "displayName": "Chromosome",
         "allowCustomFilter": True,
@@ -82,7 +82,7 @@ BIGQUERY_COLUMNS = [
     },
     {
         "type": "INTEGER",
-        "name": "start",
+        "name": "gene_start",
         "description": "Gene start coordinate (GRCh38).",
         "displayName": "Start",
         "allowCustomFilter": True,
@@ -91,7 +91,7 @@ BIGQUERY_COLUMNS = [
     },
     {
         "type": "INTEGER",
-        "name": "end",
+        "name": "gene_end",
         "description": "Gene end coordinate (GRCh38).",
         "displayName": "End",
         "allowCustomFilter": True,

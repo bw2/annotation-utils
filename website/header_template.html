@@ -343,26 +343,26 @@
             getSortColumns: () => ['hgnc_gene_id'],
             getRequiredColumns: () => ['hgnc_gene_id'],
         },
-        chrom: {
+        gene_chrom: {
             displayName: 'Chrom',
-            helpText: RESULTS_TABLE_COLUMN_HELP_TEXTS['chrom'],
-            getValue: (row) => row['chrom'] || '',
-            getSortColumns: () => ['chrom'],
-            getRequiredColumns: () => ['chrom'],
+            helpText: RESULTS_TABLE_COLUMN_HELP_TEXTS['gene_chrom'],
+            getValue: (row) => row['gene_chrom'] || '',
+            getSortColumns: () => ['gene_chrom'],
+            getRequiredColumns: () => ['gene_chrom'],
         },
-        start: {
+        gene_start: {
             displayName: 'Start',
-            helpText: RESULTS_TABLE_COLUMN_HELP_TEXTS['start'],
-            getValue: (row) => row['start'] != null ? row['start'].toLocaleString() : '',
-            getSortColumns: () => ['start'],
-            getRequiredColumns: () => ['start'],
+            helpText: RESULTS_TABLE_COLUMN_HELP_TEXTS['gene_start'],
+            getValue: (row) => row['gene_start'] != null ? row['gene_start'].toLocaleString() : '',
+            getSortColumns: () => ['gene_start'],
+            getRequiredColumns: () => ['gene_start'],
         },
-        end: {
+        gene_end: {
             displayName: 'End',
-            helpText: RESULTS_TABLE_COLUMN_HELP_TEXTS['end'],
-            getValue: (row) => row['end'] != null ? row['end'].toLocaleString() : '',
-            getSortColumns: () => ['end'],
-            getRequiredColumns: () => ['end'],
+            helpText: RESULTS_TABLE_COLUMN_HELP_TEXTS['gene_end'],
+            getValue: (row) => row['gene_end'] != null ? row['gene_end'].toLocaleString() : '',
+            getSortColumns: () => ['gene_end'],
+            getRequiredColumns: () => ['gene_end'],
         },
         clingen_curation: {
             displayName: 'ClinGen Curation',
@@ -659,7 +659,7 @@
             const chrom = regionMatch[1].startsWith('chr') ? regionMatch[1] : `chr${regionMatch[1]}`
             const start = parseInt(regionMatch[2].replace(/,/g, ''))
             const end = parseInt(regionMatch[3].replace(/,/g, ''))
-            return `(chrom = '${chrom}' AND start < ${end} AND end > ${start})`
+            return `(gene_chrom = '${chrom}' AND gene_start < ${end} AND gene_end > ${start})`
         }
 
         // HGNC gene ID: HGNC:1234

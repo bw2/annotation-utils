@@ -252,9 +252,9 @@
         const hgncId = row['hgnc_gene_id'] || ''
         const geneId = row['ensembl_gene_id'] || ''
         const displayName = geneSymbol || hgncId || geneId || 'Unknown'
-        const chrom = row['chrom'] || ''
-        const start = row['start']
-        const end = row['end']
+        const chrom = row['gene_chrom'] || ''
+        const start = row['gene_start']
+        const end = row['gene_end']
         const coordinates = (chrom && start != null && end != null) ? `${chrom}:${start.toLocaleString()}-${end.toLocaleString()}` : ''
 
         // Set page title
@@ -452,11 +452,11 @@
 
             // Initialize IGV with gene coordinates if not already set by URL
             const row = window.searchResults.rows[0]
-            if (row['chrom'] && row['start'] != null && row['end'] != null) {
-                const igvStart = Math.max(0, row['start'] - IGV_LOCUS_PADDING)
-                const igvEnd = row['end'] + IGV_LOCUS_PADDING
+            if (row['gene_chrom'] && row['gene_start'] != null && row['gene_end'] != null) {
+                const igvStart = Math.max(0, row['gene_start'] - IGV_LOCUS_PADDING)
+                const igvEnd = row['gene_end'] + IGV_LOCUS_PADDING
                 if (GLOBAL_PAGE_STATE['igvLoc'] === DEFAULT_GLOBAL_PAGE_STATE['igvLoc']) {
-                    GLOBAL_PAGE_STATE['igvLoc'] = `${row['chrom']}:${igvStart}-${igvEnd}`
+                    GLOBAL_PAGE_STATE['igvLoc'] = `${row['gene_chrom']}:${igvStart}-${igvEnd}`
                 }
             }
 
