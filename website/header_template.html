@@ -1,4 +1,6 @@
 <head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gene Lookup</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css">
@@ -127,6 +129,8 @@
     const URL_PARAM_REVERSE_ALIASES = Object.fromEntries(
         Object.entries(URL_PARAM_ALIASES).map(([k, v]) => [v, k])
     )
+    // Support common query-string variant used by external links
+    URL_PARAM_REVERSE_ALIASES['search-query'] = 'searchQuery'
 
     const writePersistentPageStateToUrl = () => {
         // Create object with only non-default values
@@ -181,6 +185,8 @@
             throw new Error(`BigQuery query error: ${error.message || 'Unknown error'}`)
         }
     }
+
+    const escapeSqlString = (s) => String(s).replace(/'/g, "''")
 
     const getDiseaseCategory = (category) => {
         if (!category) return ''
@@ -657,18 +663,20 @@
         }
 
         // HGNC gene ID: HGNC:1234
+        const escapedQ = escapeSqlString(q)
+
         if (/^HGNC:\d+$/i.test(q)) {
-            return `(UPPER(hgnc_gene_id) = UPPER('${q}'))`
+            return `(UPPER(hgnc_gene_id) = UPPER('${escapedQ}'))`
         }
 
         // Ensembl gene ID: ENSG00000000001
         if (/^ENSG\d+/i.test(q)) {
-            return `(UPPER(ensembl_gene_id) = UPPER('${q}'))`
+            return `(UPPER(ensembl_gene_id) = UPPER('${escapedQ}'))`
         }
 
         // Gene name/alias (short alphanumeric tokens that look like gene symbols)
         if (/^[A-Za-z0-9\-]+$/.test(q) && q.length <= 30) {
-            return `(UPPER(gene_symbol) = UPPER('${q}') OR UPPER(gene_aliases) LIKE UPPER('%${q}%'))`
+            return `(UPPER(gene_symbol) = UPPER('${escapedQ}') OR UPPER(gene_aliases) LIKE UPPER('%${escapedQ}%'))`
         }
 
         // Otherwise treat as disease/phenotype free-text search
@@ -682,7 +690,7 @@
             'DECIPHER_disease_names',
             'CLINVAR_phenotypes',
         ]
-        const textClauses = phenotypeColumns.map(col => `UPPER(${col}) LIKE UPPER('%${q}%')`)
+        const textClauses = phenotypeColumns.map(col => `UPPER(${col}) LIKE UPPER('%${escapedQ}%')`)
         return `(${textClauses.join(' OR ')})`
     }
 
@@ -811,13 +819,3 @@
     </div>
 </div>
 
-<!-- downloads modal dialog -->
-<div class="ui modal" id="downloads-modal" style="height: 88%; min-height: 88%">
-    <i class="close icon"></i>
-    <div class="header">
-        Downloads
-    </div>
-    <div class="content" style="font-size: 1.1em; height: 100%;">
-        <iframe src="downloads.html" style="width: 100%; height: 100%; border: 0px;"></iframe>
-    </div>
-</div>
